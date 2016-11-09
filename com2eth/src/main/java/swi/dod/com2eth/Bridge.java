@@ -72,6 +72,7 @@ public class Bridge
 		try {
 			while(!Thread.interrupted() && !stop && -1 != (len = is.read(buffer))){
 				os.write(buffer, 0, len);
+				os.flush();
 			}
 		} catch (IOException e) {
 			//only LOG
