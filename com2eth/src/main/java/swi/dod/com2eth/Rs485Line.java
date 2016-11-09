@@ -74,8 +74,9 @@ public class Rs485Line implements Closeable{
 			return;
 		}
 		try {
-			comm = new SerialPort(comPort);
-			comm.openPort();
+			SerialPort tempComm = new SerialPort(comPort);
+			tempComm.openPort();
+			comm = tempComm;
 			comm.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN);
 			comm.setParams(SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
 					SerialPort.PARITY_NONE);
@@ -90,6 +91,9 @@ public class Rs485Line implements Closeable{
 	 * @throws SerialPortException
 	 */
 	public void close() throws IOException {
+		if(!isOpened()) {
+			return;
+		}
 		try {
 			comm.closePort();
 		} catch (SerialPortException e) {
@@ -98,7 +102,7 @@ public class Rs485Line implements Closeable{
 	}
 
 	public boolean isOpened() {
-		return comm.isOpened();
+		return comm!=null?comm.isOpened():false;
 	}
 	
 	public int getTimeout() {
