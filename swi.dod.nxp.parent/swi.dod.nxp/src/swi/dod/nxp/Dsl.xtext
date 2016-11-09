@@ -1,0 +1,45 @@
+grammar swi.dod.nxp.Dsl hidden(WS, ML_COMMENT, SL_COMMENT)
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+ 
+generate dsl "http://www.dod.swi/nxp/Dsl"
+
+Model:
+	commands+=Command*;
+	
+Command:(
+	  Engine
+	| Navigate
+	| Run) ".";
+
+Engine: "Engine" DIRECTION_LR? DIRECTION Percentage;
+
+Navigate: "Navigate" DIRECTION_LR Angle;
+
+Run: "Run" Time;
+
+Percentage: Float "%";
+
+
+Angle: Float;
+
+Time: Float UNITS;
+
+Float:(NONZERO_DIGIT| ZERO)+ ("," (NONZERO_DIGIT| ZERO)+ )?;
+
+
+terminal ZERO:"0";
+
+terminal NONZERO_DIGIT:"1".."9";
+
+
+terminal DIRECTION_LR: "left"| "right";
+
+terminal DIRECTION :"forward" | "backward";
+
+terminal UNITS:"s" | "ms";
+
+terminal WS : (' '|'\t'|'\r'|'\n')+;
+
+terminal ML_COMMENT     : '/*' -> '*/';
+
+terminal SL_COMMENT     : '//' !('\n'|'\r')* ('\r'? '\n')?;
