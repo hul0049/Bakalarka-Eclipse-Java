@@ -407,4 +407,25 @@
 			type="text">
 		</fileTypes>
 	</extension>
+ <extension
+       id="NXS-editor"
+       point="org.eclipse.core.runtime.products">
+    <product
+          application="swi.dod.nxp.ui.app"
+          name="NXS editor">
+    </product>
+ </extension>
+ <extension
+       id="app"
+       name="Application"
+       point="org.eclipse.core.runtime.applications">
+    <application
+          cardinality="singleton-global"
+          thread="main"
+          visible="true">
+       <run
+             class="swi.dod.nxp.ui.Application">
+       </run>
+    </application>
+ </extension>
 </plugin>
