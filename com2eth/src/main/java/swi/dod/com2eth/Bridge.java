@@ -6,12 +6,17 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /**
  * Hello world!
  *
  */
 public class Bridge 
 {
+	private static final Logger logger = LogManager.getLogger(Bridge.class);
+	
     private static final int BUFFER_SIZE = 1024*1024;
 	private int portNumber;
     private String commPort;
@@ -24,10 +29,15 @@ public class Bridge
     public void doBridge() throws IOException {
     	try(ServerSocket ss = new ServerSocket(portNumber, 1)) {
 	    	while(true) {
+	    		String hostAdress = null;
 	    		try(final Socket soc = ss.accept();
 	    		  final Rs485Line line = new Rs485Line(commPort);
 	    		  final InputStream isSocket = soc.getInputStream();
 	    		  final OutputStream osSocket = soc.getOutputStream();) {
+	    			hostAdress = soc.getInetAddress().getCanonicalHostName();
+	    			if(logger.isInfoEnabled()){
+	    				logger.info(String.format("Accepted connection from host %s.", hostAdress));
+	    			}
 	    			line.connect();
 	    			final InputStream isLine = line.getInputStream();
 	    			final OutputStream osLine = line.getOutputStream();
@@ -40,6 +50,9 @@ public class Bridge
 	    		}  catch (IOException e) {
 	    			e.printStackTrace();
 	    		}
+	    		if(logger.isInfoEnabled() && hostAdress != null){
+    				logger.info(String.format("Connection with host %s was closed.", hostAdress));
+    			}
 	    	}
     	}
     }
