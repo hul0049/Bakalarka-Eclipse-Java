@@ -22,12 +22,6 @@ package swi.dod.com2eth;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import javax.sound.sampled.Line;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,8 +34,10 @@ import jssc.SerialPortTimeoutException;
  * @author David Ježek
  *
  */
+@SuppressWarnings("unused")
 public class Rs485Line {
 
+	
 	private static final Logger logger = LogManager.getLogger(Rs485Line.class);
 	private String comPort = "com29"; //$NON-NLS-1$
 	public static final int DEFAULT_TIMEOUT = 3000;
@@ -51,7 +47,8 @@ public class Rs485Line {
 
 	private SerialPort comm;
 	
-	/**
+	private int timeout = DEFAULT_TIMEOUT;
+		/**
 	 * 
 	 * @param comPort
 	 */
@@ -102,6 +99,23 @@ public class Rs485Line {
 	public boolean isOpened() {
 		return comm.isOpened();
 	}
+	
+	public int getTimeout() {
+		return timeout;
+	}
+
+
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
+	}
+	
+	public InputStream getInputStream() {
+		return new P_InputStream();
+	}
+	
+	public OutputStream getOutputStream() {
+		return new P_OutputStream();
+	}
 
 	/**
 	 * 
@@ -111,7 +125,7 @@ public class Rs485Line {
 	 * @throws SerialPortTimeoutException
 	 */
 	private byte[] read(int size) throws IOException {
-		return read(size, DEFAULT_TIMEOUT);
+		return read(size, timeout);
 	}
 
 	/**
@@ -132,20 +146,7 @@ public class Rs485Line {
 		return null;
 	}
 
-	/**
-	 * 
-	 * @return
-	 * @throws SerialPortException
-	 * @throws SerialPortTimeoutException
-	 */
-	private byte[] read() throws IOException {
-		try {
-			comm.openPort();
-			return comm.readBytes();
-		} catch (SerialPortException e) {
-			throw new IOException("Read error.", e); //$NON-NLS-1$
-		}
-	}
+	
 
 	/**
 	 * 
@@ -188,6 +189,33 @@ public class Rs485Line {
 		}
 	}
 
+	private class P_OutputStream extends OutputStream {
+
+		@Override
+		public void write(int b) throws IOException {
+			Rs485Line.this.sendData((byte)(b & 0xff));
+		}
+		
+		public void write(byte b[], int off, int len) throws IOException {
+	        if (b == null) {
+	            throw new NullPointerException();
+	        } else if ((off < 0) || (off > b.length) || (len < 0) ||
+	                   ((off + len) > b.length) || ((off + len) < 0)) {
+	            throw new IndexOutOfBoundsException();
+	        } else if (len == 0) {
+	            return;
+	        }
+	        byte[] buffer;
+	        if(len != b.length || off!=0) {
+	        	buffer = new byte[len];
+	        	System.arraycopy(b, off, buffer, 0, len);
+	        } else {
+	        	buffer = b;
+	        }
+	        Rs485Line.this.sendData(buffer);
+	    }
+	}
+	
 	private class P_InputStream extends InputStream {
 
 		@Override
@@ -204,11 +232,23 @@ public class Rs485Line {
 		}
 		
 		@Override
-		public int read(byte[] b) throws IOException {
-			byte[] result = Rs485Line.this.read(b.length);
-			System.arraycopy(result, 0, b, 0, result.length);
+		public int read(byte[] b, int off, int len ) throws IOException {
+			if (b == null) {
+	            throw new NullPointerException();
+	        } else if (off < 0 || len < 0 || len > b.length - off) {
+	            throw new IndexOutOfBoundsException();
+	        } else if (len == 0) {
+	            return 0;
+	        }
+			byte[] result = Rs485Line.this.read(len);
+			System.arraycopy(result, 0, b, off, result.length);
 			return result.length;
 		}
+		
+		@Override
+		public int available() throws IOException {
+	        return availableBytes();
+	    }
 		
 		
 	}
