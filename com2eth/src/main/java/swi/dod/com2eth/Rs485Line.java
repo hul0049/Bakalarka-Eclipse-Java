@@ -19,6 +19,7 @@
 
 package swi.dod.com2eth;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,7 +36,7 @@ import jssc.SerialPortTimeoutException;
  *
  */
 @SuppressWarnings("unused")
-public class Rs485Line {
+public class Rs485Line implements Closeable{
 
 	
 	private static final Logger logger = LogManager.getLogger(Rs485Line.class);

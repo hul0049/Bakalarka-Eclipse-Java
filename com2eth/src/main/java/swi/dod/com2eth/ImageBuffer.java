@@ -4,7 +4,6 @@ import java.awt.image.ColorModel;
 import java.awt.image.ImageConsumer;
 import java.awt.image.ImageProducer;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 public class ImageBuffer implements ImageProducer {
