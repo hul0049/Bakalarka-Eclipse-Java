@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -17,7 +18,7 @@ public class Bridge
 {
 	private static final Logger logger = LogManager.getLogger(Bridge.class);
 	
-    private static final int BUFFER_SIZE = 1024*1024;
+    //private static final int BUFFER_SIZE = 1024*1024;
 	private int portNumber;
     private String commPort;
 	public Bridge(int portNumber, String commPort) {
@@ -41,8 +42,8 @@ public class Bridge
 	    			line.connect();
 	    			final InputStream isLine = line.getInputStream();
 	    			final OutputStream osLine = line.getOutputStream();
-		    		Thread t1 = new Thread(() -> copyDataBetweenStreams(isSocket, osLine));
-		    		Thread t2 = new Thread(() -> copyDataBetweenStreams(isLine, osSocket));
+		    		Thread t1 = new Thread(() -> copyDataBetweenStreams(isSocket, osLine, Tfc.CONTROL_LENGTH, null));
+		    		Thread t2 = new Thread(() -> copyDataBetweenStreams(isLine, osSocket,Tfc.DATA_LENGTH + 1, Tfc.DATA_HEADER));
 		    		t1.start();
 		    		t2.start();
 		    		joinThreadOrInterrupt(t1);
@@ -65,19 +66,55 @@ public class Bridge
 		}
 	}
 
-	private void copyDataBetweenStreams( InputStream is, OutputStream os) {
-		byte []buffer = new byte[BUFFER_SIZE];
-		boolean stop = false;
+	private void copyDataBetweenStreams( InputStream is, OutputStream os, int size, byte[] allignHeader) {
+		byte []buffer = new byte[size];
+		
 		int len;
 		try {
-			while(!Thread.interrupted() && !stop && -1 != (len = is.read(buffer))){
-				os.write(buffer, 0, len);
+			while(!Thread.interrupted()){
+				if(allignHeader != null) {
+					if(!waitForHeader(is,os, allignHeader)) {
+						break;
+					}
+				}
+				len = is.read(buffer);
+				if(len == -1) {
+					break;
+				}
+ 				os.write(buffer, 0, len);
 				os.flush();
 			}
 		} catch (IOException e) {
 			//only LOG
 			e.printStackTrace();
 		}
+	}
+
+	private boolean waitForHeader(InputStream is, OutputStream os, byte[] allignHeader) {
+		TimeoutMemento memento = new TimeoutMemento(is, 200);
+		try {
+			int index = 0;
+			byte[] b = new byte[1];
+			while (index < allignHeader.length) {
+				int receivedBytes = is.read(b);
+				if (receivedBytes != 0 && b[0] == allignHeader[index]) {
+					index++;
+				} else {
+					index = 0;
+				}
+				if(receivedBytes != 0) {
+					os.write(b);
+				}
+			}
+			return true;
+		} catch (SocketTimeoutException e) {
+			logger.error("Timeout.", e);
+		} catch(IOException e) {
+			logger.error( e);
+		} finally {
+			memento.restoreTimeout();
+		}
+		return false;
 	}
     
 }
