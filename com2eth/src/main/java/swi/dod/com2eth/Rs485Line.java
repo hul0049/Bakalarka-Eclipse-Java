@@ -246,6 +246,9 @@ public class Rs485Line implements Closeable{
 	            return 0;
 	        }
 			byte[] result = Rs485Line.this.read(len);
+			if(result == null) {
+				return 0;
+			}
 			System.arraycopy(result, 0, b, off, result.length);
 			return result.length;
 		}
