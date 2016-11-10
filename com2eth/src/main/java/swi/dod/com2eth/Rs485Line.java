@@ -221,7 +221,7 @@ public class Rs485Line implements Closeable{
 	    }
 	}
 	
-	private class P_InputStream extends InputStream {
+	private class P_InputStream extends InputStream implements ITimeoutProvider{
 
 		@Override
 		public int read() throws IOException {
@@ -254,6 +254,16 @@ public class Rs485Line implements Closeable{
 		public int available() throws IOException {
 	        return availableBytes();
 	    }
+
+		@Override
+		public int getTimeout() {
+			return Rs485Line.this.getTimeout();
+		}
+
+		@Override
+		public void setTimeout(int timeout) {
+			Rs485Line.this.setTimeout(timeout);
+		}
 		
 		
 	}

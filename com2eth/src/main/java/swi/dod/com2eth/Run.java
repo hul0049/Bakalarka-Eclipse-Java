@@ -13,6 +13,7 @@ public class Run {
 //		if(xml != null) {
 //			PropertyConfigurator.configure(xml);
 //		}
+
 		int portNumber = Integer.parseInt(args[0]);
 		String commPort = args[1];
 		if(logger.isInfoEnabled()) {

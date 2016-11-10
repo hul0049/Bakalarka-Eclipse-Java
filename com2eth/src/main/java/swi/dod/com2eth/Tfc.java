@@ -121,6 +121,7 @@ public class Tfc {
 		}
 	};
 
+	//public static final int DATA_LENGTH = 277;
 	public static final int CONTROL_LENGTH_DATA = 1+1+1+ 1+ 2*2+2*2;
 	public static final int CONTROL_LENGTH = HEADER_LENGTH + CONTROL_LENGTH_DATA;
 	private byte[] control = new byte[CONTROL_LENGTH];
