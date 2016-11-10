@@ -178,7 +178,7 @@ public class Cockpit extends JFrame {
 	 */
 	private Rs485Line getRs485Line() {
 		if (rs485Line == null) {
-			rs485Line = new Rs485Line("com30");
+			rs485Line = new Rs485Line("pi3w.lan");
 		}
 		return rs485Line;
 	}
@@ -1082,7 +1082,7 @@ public class Cockpit extends JFrame {
 	private JTextField getTxtComPort() {
 		if (txtComPort == null) {
 			txtComPort = new JTextField();
-			txtComPort.setText("com30");
+			txtComPort.setText("pi3w.lan");
 			txtComPort.setColumns(10);
 		}
 		return txtComPort;

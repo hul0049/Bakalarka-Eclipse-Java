@@ -20,7 +20,11 @@
 package jezek.nxp.car;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Random;
@@ -43,12 +47,16 @@ public class Rs485Line implements Runnable{
 
 	private static final Logger logger = LogManager.getLogger(Rs485Line.class);
 	private String comPort = "com29"; //$NON-NLS-1$
+	
 	public static final int DEFAULT_TIMEOUT = 3000;
 	public static final int FREE_LINE_TIMEOUT = 10;
 
 	public static final byte[] DATA_HEADER = new byte[] { (byte) 0x02, (byte) 0x19, (byte) 0x01, (byte) 0x01 };
 
-	private SerialPort comm;
+//	private SerialPort comm;
+	private Socket socket;
+	private InputStream socketInput;
+	private OutputStream socketOutput;
 	private Random random = new Random();
 	private boolean end = false;
 	private Thread readingThread;
@@ -76,18 +84,21 @@ public class Rs485Line implements Runnable{
 
 
 	public void connect() throws IOException {
-		if (comm != null && comm.isOpened()) {
-			return;
-		}
-		try {
-			comm = new SerialPort(comPort);
-			comm.openPort();
-			comm.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN);
-			comm.setParams(SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-					SerialPort.PARITY_NONE);
-		} catch (SerialPortException e) {
-			throw new IOException("ComPort connection error.", e); //$NON-NLS-1$
-		}
+		 socket = new Socket(InetAddress.getByName(comPort), 40460);
+		 socketInput  = socket.getInputStream();
+		 socketOutput = socket.getOutputStream();
+//		if (comm != null && comm.isOpened()) {
+//			return;
+//		}
+//		try {
+//			comm = new SerialPort(comPort);
+//			comm.openPort();
+//			comm.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN);
+//			comm.setParams(SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
+//					SerialPort.PARITY_NONE);
+//		} catch (SerialPortException e) {
+//			throw new IOException("ComPort connection error.", e); //$NON-NLS-1$
+//		}
 
 	}
 
@@ -96,15 +107,17 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortException
 	 */
 	public void close() throws IOException {
-		try {
-			comm.closePort();
-		} catch (SerialPortException e) {
-			throw new IOException("ComPort close error.", e); //$NON-NLS-1$
-		}
+		socket.close();
+//		try {
+//			comm.closePort();
+//		} catch (SerialPortException e) {
+//			throw new IOException("ComPort close error.", e); //$NON-NLS-1$
+//		}
 	}
 
 	public boolean isOpened() {
-		return comm.isOpened();
+		return !socket.isClosed();
+//		return comm.isOpened();
 	}
 
 	/**
@@ -115,7 +128,21 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortTimeoutException
 	 */
 	public byte[] read(int size) throws IOException {
-		return read(size, DEFAULT_TIMEOUT);
+		byte[] data = new byte[size];
+		int totalReaded = 0;
+		socket.setSoTimeout(0);
+		while(totalReaded < size){
+			int readed = socketInput.read(data, totalReaded, size - totalReaded);
+			if(readed < 0){
+				break;
+			}
+			totalReaded += readed;
+		}
+		if(totalReaded >= 0 && totalReaded != size){
+			data = Arrays.copyOf(data, totalReaded);
+		}
+		return data;
+//		return read(size, DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -127,13 +154,32 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortTimeoutException
 	 */
 	public byte[] read(int size, int timeout) throws IOException {
-		try {
-			return comm.readBytes(size, timeout);
-		} catch (SerialPortException e) {
-			throw new IOException("ComPort read error.", e); //$NON-NLS-1$
-		} catch (SerialPortTimeoutException e) {
+		byte[] data = new byte[size];
+		socket.setSoTimeout(timeout);
+		int readed = socketInput.read(data, 0, size);
+		if(readed >= 0 && readed != size){
+			data = Arrays.copyOf(data, readed);
 		}
-		return null;
+		return data;
+//		try {
+//			return comm.readBytes(size, timeout);
+//		} catch (SerialPortException e) {
+//			throw new IOException("ComPort read error.", e); //$NON-NLS-1$
+//		} catch (SerialPortTimeoutException e) {
+//		}
+//		return null;
+	}
+
+	public byte readByte(int timeout) throws IOException {
+		socket.setSoTimeout(timeout);
+		return (byte)socketInput.read();
+//		try {
+//			return comm.readBytes(size, timeout);
+//		} catch (SerialPortException e) {
+//			throw new IOException("ComPort read error.", e); //$NON-NLS-1$
+//		} catch (SerialPortTimeoutException e) {
+//		}
+//		return null;
 	}
 
 	/**
@@ -143,12 +189,19 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortTimeoutException
 	 */
 	public byte[] read() throws IOException {
-		try {
-			comm.openPort();
-			return comm.readBytes();
-		} catch (SerialPortException e) {
-			throw new IOException("Read error.", e); //$NON-NLS-1$
+		int size = socketInput.available();
+		byte[] data = new byte[size];
+		int readed = socketInput.read(data, 0, size);
+		if(readed >= 0 && readed != size){
+			data = Arrays.copyOf(data, readed);
 		}
+		return data;
+//		try {
+//			comm.openPort();
+//			return comm.readBytes();
+//		} catch (SerialPortException e) {
+//			throw new IOException("Read error.", e); //$NON-NLS-1$
+//		}
 	}
 
 	/**
@@ -158,11 +211,12 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortException
 	 */
 	public void sendData(byte[] data) throws IOException {
-		try {
-			comm.writeBytes(data);
-		} catch (SerialPortException e) {
-			throw new IOException("Write error.", e); //$NON-NLS-1$
-		}
+		socketOutput.write(data);
+//		try {
+//			comm.writeBytes(data);
+//		} catch (SerialPortException e) {
+//			throw new IOException("Write error.", e); //$NON-NLS-1$
+//		}
 	}
 
 	/**
@@ -171,11 +225,12 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortException
 	 */
 	public int availableBytes() throws IOException {
-		try {
-			return comm.getInputBufferBytesCount();
-		} catch (SerialPortException e) {
-			throw new IOException("Available bytes error.", e); //$NON-NLS-1$
-		}
+		return socketInput.available();
+//		try {
+//			return comm.getInputBufferBytesCount();
+//		} catch (SerialPortException e) {
+//			throw new IOException("Available bytes error.", e); //$NON-NLS-1$
+//		}
 	}
 
 	/**
@@ -185,11 +240,12 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortException
 	 */
 	public void sendData(byte data) throws IOException {
-		try {
-			comm.writeByte(data);
-		} catch (SerialPortException e) {
-			throw new IOException("Write bytes error.", e); //$NON-NLS-1$
-		}
+		socketOutput.write(data);
+//		try {
+//			comm.writeByte(data);
+//		} catch (SerialPortException e) {
+//			throw new IOException("Write bytes error.", e); //$NON-NLS-1$
+//		}
 	}
 
 	/**
@@ -205,13 +261,16 @@ public class Rs485Line implements Runnable{
 			int index = 0;
 			long startTime = System.currentTimeMillis();
 			while (index < template.length) {
-				byte[] receivedByte = read(1, timeout);
-				if (receivedByte != null && receivedByte[0] == template[index]) {
-					index++;
-				} else {
-					index = 0;
-					if (System.currentTimeMillis() - startTime > timeout) {
+				try {
+					byte receivedByte = readByte(timeout);
+					if (receivedByte == template[index]) {
+						index++;
+					} else {
+						index = 0;
+						if (System.currentTimeMillis() - startTime > timeout) {
+						}
 					}
+				} catch (SocketTimeoutException e) {
 				}
 			}
 			return true;
