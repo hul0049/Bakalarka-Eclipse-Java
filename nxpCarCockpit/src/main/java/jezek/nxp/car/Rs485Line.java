@@ -19,6 +19,8 @@
 
 package jezek.nxp.car;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,7 +56,7 @@ public class Rs485Line implements Runnable{
 	public static final byte[] DATA_HEADER = new byte[] { (byte) 0x02, (byte) 0x19, (byte) 0x01, (byte) 0x01 };
 
 //	private SerialPort comm;
-	private Socket socket;
+//	private Socket socket;
 	private InputStream socketInput;
 	private OutputStream socketOutput;
 	private Random random = new Random();
@@ -84,9 +86,11 @@ public class Rs485Line implements Runnable{
 
 
 	public void connect() throws IOException {
-		 socket = new Socket(InetAddress.getByName(comPort), 40460);
-		 socketInput  = socket.getInputStream();
-		 socketOutput = socket.getOutputStream();
+//		 socket = new Socket(InetAddress.getByName(comPort), 40460);
+//		 socketInput  = socket.getInputStream();
+//		 socketOutput = socket.getOutputStream();
+		 socketInput  = new FileInputStream(comPort);
+		 socketOutput = new FileOutputStream(comPort);
 //		if (comm != null && comm.isOpened()) {
 //			return;
 //		}
@@ -107,7 +111,9 @@ public class Rs485Line implements Runnable{
 	 * @throws SerialPortException
 	 */
 	public void close() throws IOException {
-		socket.close();
+//		socket.close();
+		socketInput.close();
+		socketOutput.close();
 //		try {
 //			comm.closePort();
 //		} catch (SerialPortException e) {
@@ -116,7 +122,8 @@ public class Rs485Line implements Runnable{
 	}
 
 	public boolean isOpened() {
-		return !socket.isClosed();
+//		return !socket.isClosed();
+		return false;
 //		return comm.isOpened();
 	}
 
@@ -130,7 +137,7 @@ public class Rs485Line implements Runnable{
 	public byte[] read(int size) throws IOException {
 		byte[] data = new byte[size];
 		int totalReaded = 0;
-		socket.setSoTimeout(0);
+//		socket.setSoTimeout(0);
 		while(totalReaded < size){
 			int readed = socketInput.read(data, totalReaded, size - totalReaded);
 			if(readed < 0){
@@ -155,7 +162,7 @@ public class Rs485Line implements Runnable{
 	 */
 	public byte[] read(int size, int timeout) throws IOException {
 		byte[] data = new byte[size];
-		socket.setSoTimeout(timeout);
+//		socket.setSoTimeout(timeout);
 		int readed = socketInput.read(data, 0, size);
 		if(readed >= 0 && readed != size){
 			data = Arrays.copyOf(data, readed);
@@ -171,7 +178,7 @@ public class Rs485Line implements Runnable{
 	}
 
 	public byte readByte(int timeout) throws IOException {
-		socket.setSoTimeout(timeout);
+//		socket.setSoTimeout(timeout);
 		return (byte)socketInput.read();
 //		try {
 //			return comm.readBytes(size, timeout);

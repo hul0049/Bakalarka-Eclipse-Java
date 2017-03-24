@@ -33,27 +33,31 @@ public class AnimImage extends Canvas implements Runnable {
 	private int fps = 0;
 	private int imageWidth;
 	private int imageHeight;
-	private transient ImageBuffer imageBuffer;
+	private transient AbstractImageBuffer imageBuffer;
 	private transient Thread animator;
 	private boolean stop;
 	private int[] imgData;
 
+	public AnimImage() {
+		this.imageWidth = 300;
+		this.imageHeight = 300;
+	}
 	/**
 	 * 
 	 * @param width
 	 * @param height
 	 * @param imageBuffer
 	 */
-	public AnimImage(int width, int height, ImageBuffer imageBuffer) {
-		this.imageWidth = width;
-		this.imageHeight = height;
+	public AnimImage(AbstractImageBuffer imageBuffer) {
+		this.imageWidth = imageBuffer.getWidth();
+		this.imageHeight = imageBuffer.getHeight();
 		this.imageBuffer = imageBuffer;
 		imgData = new int[imageWidth * imageHeight];
 
-		setMinimumSize(new Dimension(width, height));
-		setMaximumSize(new Dimension(width, height));
-		setPreferredSize(new Dimension(width, height));
-		setSize(new Dimension(width, height));
+		setMinimumSize(new Dimension(imageWidth, imageHeight));
+		setMaximumSize(new Dimension(imageWidth, imageHeight));
+		setPreferredSize(new Dimension(imageWidth, imageHeight));
+		setSize(new Dimension(imageWidth, imageHeight));
 		addHierarchyListener(e -> {
 			if (e.getChangeFlags() == HierarchyEvent.DISPLAYABILITY_CHANGED) {
 				if (isDisplayable()) {
@@ -101,15 +105,15 @@ public class AnimImage extends Canvas implements Runnable {
 			g.dispose();
 			bf.show();
 			counter++;
-			int row = imageBuffer.getRowPosition();
-			while (row == imageBuffer.getRowPosition()) {
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
+//			int row = imageBuffer.getRowPosition();
+//			while (row == imageBuffer.getRowPosition()) {
+//				try {
+//					Thread.sleep(1);
+//				} catch (InterruptedException e) {
+//					Thread.currentThread().interrupt();
+//					break;
+//				}
+//			}
 			if (System.nanoTime() - time > 2000000000l) {
 				fps = counter/2;
 				logger.debug("fps " + fps);

@@ -1,14 +1,19 @@
 package jezek.nxp.car;
 
 import java.awt.EventQueue;
+import java.awt.FileDialog;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
 import java.awt.image.ImageProducer;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -26,6 +31,7 @@ import java.awt.Insets;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.border.BevelBorder;
 import java.awt.FlowLayout;
 import java.awt.Color;
@@ -33,6 +39,11 @@ import javax.swing.border.TitledBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileFilter;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,21 +55,30 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.JToggleButton;
 import javax.swing.ImageIcon;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseAdapter;
 import javax.swing.JTextField;
+import javax.swing.JTabbedPane;
+import java.awt.event.AdjustmentListener;
+import java.awt.event.AdjustmentEvent;
+import javax.swing.JSpinner;
 
 public class Cockpit extends JFrame {
-	
-	
+
 	private static final Logger logger = LogManager.getLogger(Cockpit.class);
-	
+
+	private static int IMAGE_HEIGHT = 800;
+	private static int IMAGE_WIDTH_ZOOM = 4;
+
 	private AnimImage animImage;
 	private Rs485Line rs485Line;
 	private ImageBuffer imageBuffer;
+	private ImageBuffer2 imageBuffer2;
 	private JPanel panelCamerra;
 	private JPanel panelSetting;
 	private JPanel panelControl;
@@ -112,6 +132,35 @@ public class Cockpit extends JFrame {
 	private JLabel lblRecordFile;
 	private JButton btnSelectFile;
 	private JToggleButton tglbtnRecord;
+	private JTabbedPane tabbedPane;
+	private JPanel panelCockpit;
+	private JPanel panelMonitor;
+	private AnimImage anmImgMonitor;
+	private UDPServer udpServer;
+	private JPanel panel_2;
+	private JButton btnStop;
+	private JButton btnStart;
+	private JScrollBar scrollBar;
+	private JTextField txtUdpPort;
+	private DrivingRecord drivingRecord;
+	private JButton btnXmlExport;
+	private JButton btnXmlImport;
+	private JButton btnBinExport;
+	private JButton btnBinImport;
+	private JPanel panel_3;
+	private JLabel brigthness;
+	private JSlider slider_1;
+	private JLabel lblColumnCount;
+	private JSpinner spinnerColumnCount;
+	private JLabel label;
+	private JLabel label_1;
+	private JLabel label_2;
+	private JLabel label_3;
+	private JLabel lblColumnIndex;
+	private JLabel lblColumnWidth;
+	private JLabel lblColumnZoom;
+	private JSpinner spinnerColumnWidth;
+	private JSpinner spinnerColumnZoom;
 
 	/**
 	 * Launch the application.
@@ -133,7 +182,7 @@ public class Cockpit extends JFrame {
 	 * Create the frame.
 	 */
 	public Cockpit() {
-		getContentPane().setBackground(Color.RED);
+		getPanelCockpit().setBackground(Color.RED);
 
 		initialize();
 	}
@@ -141,34 +190,18 @@ public class Cockpit extends JFrame {
 	private void initialize() {
 		setBounds(100, 100, 996, 690);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		GridBagLayout gridBagLayout = new GridBagLayout();
-		getContentPane().setLayout(gridBagLayout);
-		GridBagConstraints gbcPanelSetting = new GridBagConstraints();
-		gbcPanelSetting.insets = new Insets(5, 5, 5, 5);
-		gbcPanelSetting.fill = GridBagConstraints.BOTH;
-		gbcPanelSetting.gridx = 0;
-		gbcPanelSetting.gridy = 0;
-		getContentPane().add(getPanelSetting(), gbcPanelSetting);
-		GridBagConstraints gbcPanelData = new GridBagConstraints();
-		gbcPanelData.gridheight = 2;
-		gbcPanelData.insets = new Insets(5, 0, 5, 5);
-		gbcPanelData.fill = GridBagConstraints.BOTH;
-		gbcPanelData.gridx = 1;
-		gbcPanelData.gridy = 0;
-		getContentPane().add(getPanelData(), gbcPanelData);
-		GridBagConstraints gbcPanelControl = new GridBagConstraints();
-		gbcPanelControl.weightx = 1.0;
-		gbcPanelControl.weighty = 1.0;
-		gbcPanelControl.insets = new Insets(0, 5, 5, 5);
-		gbcPanelControl.fill = GridBagConstraints.BOTH;
-		gbcPanelControl.gridx = 0;
-		gbcPanelControl.gridy = 1;
-		getContentPane().add(getPanelControl(), gbcPanelControl);
+		getContentPane().setLayout(new BorderLayout(0, 0));
+		GridBagConstraints gbcTabbedPane = new GridBagConstraints();
+		gbcTabbedPane.insets = new Insets(0, 0, 0, 5);
+		gbcTabbedPane.fill = GridBagConstraints.BOTH;
+		gbcTabbedPane.gridx = 0;
+		gbcTabbedPane.gridy = 2;
+		getContentPane().add(getTabbedPane());
 	}
 
 	private AnimImage getAnimImage() {
 		if (animImage == null) {
-			animImage = new AnimImage(128 * 2, 500, getImageBuffer());
+			animImage = new AnimImage(getImageBuffer());
 		}
 		return animImage;
 	}
@@ -178,7 +211,7 @@ public class Cockpit extends JFrame {
 	 */
 	private Rs485Line getRs485Line() {
 		if (rs485Line == null) {
-			rs485Line = new Rs485Line("pi3w.lan");
+			rs485Line = new Rs485Line("192.168.46.193");
 		}
 		return rs485Line;
 	}
@@ -188,7 +221,7 @@ public class Cockpit extends JFrame {
 	 */
 	private ImageBuffer getImageBuffer() {
 		if (imageBuffer == null) {
-			imageBuffer = new ImageBuffer(128, 500, 1);
+			imageBuffer = new ImageBuffer(128, IMAGE_WIDTH_ZOOM, IMAGE_HEIGHT, 1);
 			getRs485Line().getTfc().addImageBuffer(imageBuffer);
 		}
 		return imageBuffer;
@@ -496,7 +529,8 @@ public class Cockpit extends JFrame {
 			getLblFbAvalue().setText(String.format("%fA", tfc.ReadFB_f(0)));
 			getLblFbBvalue().setText(String.format("%fA", tfc.ReadFB_f(1)));
 			getLblBatteryValue().setText(String.format("%fV", tfc.ReadBatteryVoltage_f()));
-//			((TitledBorder)getPanelCamerra().getBorder()).setTitle("Camerra Data FPS: " + getAnimImage().getFps());
+			// ((TitledBorder)getPanelCamerra().getBorder()).setTitle("Camerra
+			// Data FPS: " + getAnimImage().getFps());
 			try {
 				Thread.sleep(300);
 			} catch (InterruptedException e) {
@@ -1082,7 +1116,7 @@ public class Cockpit extends JFrame {
 	private JTextField getTxtComPort() {
 		if (txtComPort == null) {
 			txtComPort = new JTextField();
-			txtComPort.setText("pi3w.lan");
+			txtComPort.setText("/dev/ttyACM0");
 			txtComPort.setColumns(10);
 		}
 		return txtComPort;
@@ -1095,7 +1129,7 @@ public class Cockpit extends JFrame {
 				public void actionPerformed(ActionEvent e) {
 					getRs485Line().setComPort(getTxtComPort().getText());
 					getRs485Line().startRead();
-					getContentPane().setBackground(getBackground());
+					getPanelCockpit().setBackground(getBackground());
 					getBtnConnect().setEnabled(false);
 				}
 			});
@@ -1197,12 +1231,13 @@ public class Cockpit extends JFrame {
 		if (tglbtnRecord == null) {
 			tglbtnRecord = new JToggleButton("Record");
 			tglbtnRecord.addChangeListener(e -> {
-				if(getTglbtnRecord().getModel().isSelected()){
+				if (getTglbtnRecord().getModel().isSelected()) {
 					try {
 						getRs485Line().startRecording(new FileOutputStream(getTxtFile().getText()));
 					} catch (FileNotFoundException e1) {
 						logger.info("File open error", e1);
-						JOptionPane.showMessageDialog(getRootPane(), "File not found.", "Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(getRootPane(), "File not found.", "Error",
+								JOptionPane.ERROR_MESSAGE);
 					}
 				} else {
 					getRs485Line().stopRecording();
@@ -1210,5 +1245,505 @@ public class Cockpit extends JFrame {
 			});
 		}
 		return tglbtnRecord;
+	}
+
+	private JTabbedPane getTabbedPane() {
+		if (tabbedPane == null) {
+			tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+			tabbedPane.addTab("Cockpit", null, getPanelCockpit(), null);
+			tabbedPane.addTab("Monitor", null, getPanelMonitor(), null);
+		}
+		return tabbedPane;
+	}
+
+	private JPanel getPanelCockpit() {
+		if (panelCockpit == null) {
+			panelCockpit = new JPanel();
+			GridBagLayout gridBagLayout = new GridBagLayout();
+			gridBagLayout.rowWeights = new double[] { 0.0, 0.0 };
+			gridBagLayout.columnWeights = new double[] { 1.0, 0.0 };
+			panelCockpit.setLayout(gridBagLayout);
+			GridBagConstraints gbcPanelSetting = new GridBagConstraints();
+			gbcPanelSetting.insets = new Insets(5, 5, 5, 5);
+			gbcPanelSetting.fill = GridBagConstraints.BOTH;
+			gbcPanelSetting.gridx = 0;
+			gbcPanelSetting.gridy = 0;
+			panelCockpit.add(getPanelSetting(), gbcPanelSetting);
+			GridBagConstraints gbcPanelData = new GridBagConstraints();
+			gbcPanelData.gridheight = 2;
+			gbcPanelData.insets = new Insets(5, 0, 5, 0);
+			gbcPanelData.fill = GridBagConstraints.BOTH;
+			gbcPanelData.gridx = 1;
+			gbcPanelData.gridy = 0;
+			panelCockpit.add(getPanelData(), gbcPanelData);
+			GridBagConstraints gbcPanelControl = new GridBagConstraints();
+			gbcPanelControl.weightx = 1.0;
+			gbcPanelControl.weighty = 1.0;
+			gbcPanelControl.insets = new Insets(0, 5, 5, 5);
+			gbcPanelControl.fill = GridBagConstraints.BOTH;
+			gbcPanelControl.gridx = 0;
+			gbcPanelControl.gridy = 1;
+			panelCockpit.add(getPanelControl(), gbcPanelControl);
+
+		}
+		return panelCockpit;
+	}
+
+	private JPanel getPanelMonitor() {
+		if (panelMonitor == null) {
+			panelMonitor = new JPanel();
+			panelMonitor.setLayout(new BorderLayout(0, 0));
+			panelMonitor.add(getAnmImgMonitor(), BorderLayout.CENTER);
+			panelMonitor.add(getPanel_2(), BorderLayout.EAST);
+			panelMonitor.add(getScrollBar(), BorderLayout.WEST);
+			panelMonitor.add(getPanel_3(), BorderLayout.NORTH);
+		}
+		return panelMonitor;
+	}
+
+	private AnimImage getAnmImgMonitor() {
+		if (anmImgMonitor == null) {
+			anmImgMonitor = new AnimImage(getImageBuffer2());
+		}
+		return anmImgMonitor;
+	}
+
+	private ImageBuffer2 getImageBuffer2() {
+		if (imageBuffer2 == null) {
+			imageBuffer2 = new ImageBuffer2(500, getDrivingRecord());
+		}
+		return imageBuffer2;
+	}
+
+	/**
+	 * @wbp.nonvisual location=226,717
+	 */
+	private UDPServer getUdpServer() {
+		if (udpServer == null) {
+			int port = Integer.parseInt(getTxtUdpPort().getText());
+			udpServer = new UDPServer(port, getDrivingRecord());
+		}
+		return udpServer;
+	}
+
+	private JPanel getPanel_2() {
+		if (panel_2 == null) {
+			panel_2 = new JPanel();
+			GridBagLayout gblPanel_2 = new GridBagLayout();
+			gblPanel_2.columnWidths = new int[] { 117, 0 };
+			gblPanel_2.rowHeights = new int[] { 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			gblPanel_2.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+			gblPanel_2.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+			panel_2.setLayout(gblPanel_2);
+			GridBagConstraints gbcTxtUdpPort = new GridBagConstraints();
+			gbcTxtUdpPort.insets = new Insets(0, 0, 5, 0);
+			gbcTxtUdpPort.fill = GridBagConstraints.HORIZONTAL;
+			gbcTxtUdpPort.gridx = 0;
+			gbcTxtUdpPort.gridy = 0;
+			panel_2.add(getTxtUdpPort(), gbcTxtUdpPort);
+			GridBagConstraints gbcBtnStart = new GridBagConstraints();
+			gbcBtnStart.insets = new Insets(0, 0, 5, 0);
+			gbcBtnStart.anchor = GridBagConstraints.NORTHWEST;
+			gbcBtnStart.gridx = 0;
+			gbcBtnStart.gridy = 1;
+			panel_2.add(getBtnStart(), gbcBtnStart);
+			GridBagConstraints gbcBtnStop = new GridBagConstraints();
+			gbcBtnStop.insets = new Insets(0, 0, 5, 0);
+			gbcBtnStop.anchor = GridBagConstraints.NORTHWEST;
+			gbcBtnStop.gridx = 0;
+			gbcBtnStop.gridy = 2;
+			panel_2.add(getBtnStop(), gbcBtnStop);
+			GridBagConstraints gbcBtnXmlExport = new GridBagConstraints();
+			gbcBtnXmlExport.insets = new Insets(0, 0, 5, 0);
+			gbcBtnXmlExport.gridx = 0;
+			gbcBtnXmlExport.gridy = 4;
+			panel_2.add(getBtnXmlExport(), gbcBtnXmlExport);
+			GridBagConstraints gbcBtnXmlImport = new GridBagConstraints();
+			gbcBtnXmlImport.insets = new Insets(0, 0, 5, 0);
+			gbcBtnXmlImport.gridx = 0;
+			gbcBtnXmlImport.gridy = 6;
+			panel_2.add(getBtnXmlImport(), gbcBtnXmlImport);
+			GridBagConstraints gbcBtnBinExport = new GridBagConstraints();
+			gbcBtnBinExport.insets = new Insets(0, 0, 5, 0);
+			gbcBtnBinExport.gridx = 0;
+			gbcBtnBinExport.gridy = 9;
+			panel_2.add(getBtnBinExport(), gbcBtnBinExport);
+			GridBagConstraints gbcBtnBinImport = new GridBagConstraints();
+			gbcBtnBinImport.gridx = 0;
+			gbcBtnBinImport.gridy = 11;
+			panel_2.add(getBtnBinImport(), gbcBtnBinImport);
+		}
+		return panel_2;
+	}
+
+	private JButton getBtnStop() {
+		if (btnStop == null) {
+			btnStop = new JButton("Stop");
+			btnStop.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					getUdpServer().stop();
+				}
+			});
+		}
+		return btnStop;
+	}
+
+	private JButton getBtnStart() {
+		if (btnStart == null) {
+			btnStart = new JButton("Start");
+			btnStart.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					getUdpServer().readData();
+				}
+			});
+		}
+		return btnStart;
+	}
+
+	private JScrollBar getScrollBar() {
+		if (scrollBar == null) {
+			scrollBar = new JScrollBar();
+			scrollBar.addAdjustmentListener(new AdjustmentListener() {
+				public void adjustmentValueChanged(AdjustmentEvent e) {
+					if (e.getValue() != 0) {
+						getImageBuffer2().setScrollPosition(getDrivingRecord().getData().size() - e.getValue());
+					}
+				}
+			});
+		}
+		return scrollBar;
+	}
+
+	private JTextField getTxtUdpPort() {
+		if (txtUdpPort == null) {
+			txtUdpPort = new JTextField();
+			txtUdpPort.setText("5555");
+			txtUdpPort.setColumns(10);
+		}
+		return txtUdpPort;
+	}
+
+	/**
+	 * @wbp.nonvisual location=284,717
+	 */
+	private DrivingRecord getDrivingRecord() {
+		if (drivingRecord == null) {
+			drivingRecord = new DrivingRecord();
+			drivingRecord.addPropertyDataListener(evt -> {
+				SwingUtilities.invokeLater(() -> {
+					getScrollBar().getModel()
+							.setMaximum(Math.max(drivingRecord.getData().size(), getImageBuffer2().getHeight()));
+					getScrollBar().getModel().setMinimum(0);
+					getScrollBar().getModel().setExtent(getImageBuffer2().getHeight());
+				});
+			});
+		}
+		return drivingRecord;
+	}
+
+	private JButton getBtnXmlExport() {
+		if (btnXmlExport == null) {
+			btnXmlExport = new JButton("Xml Export");
+			btnXmlExport.addActionListener(l -> {
+				FileUtils.selectFileAndWrite("", true, new FileFilter() {
+
+					@Override
+					public String getDescription() {
+						return "XML file";
+					}
+
+					@Override
+					public boolean accept(File f) {
+						return f.getName().endsWith(".xml");
+					}
+				}, getBtnXmlExport(), f -> {
+				}, f -> {
+					if(!f.getName().endsWith(".xml")){
+						return new File(f.getAbsolutePath()+".xml");
+					}
+					return f;
+				}, file -> {
+					try {
+						JAXBContext jaxbContext = JAXBContext.newInstance(DrivingRecord.class);
+						Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+						// output pretty printed
+						jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+						jaxbMarshaller.marshal(getDrivingRecord(), file);
+					} catch (JAXBException e) {
+						e.printStackTrace();
+						return false;
+					}
+					return true;
+				});
+
+			});
+		}
+		return btnXmlExport;
+	}
+
+	private JButton getBtnXmlImport() {
+		if (btnXmlImport == null) {
+			btnXmlImport = new JButton("Xml Import");
+			btnXmlImport.addActionListener(l -> {
+				JFileChooser fileChooser = new JFileChooser("");
+				fileChooser.setFileFilter(new FileFilter() {
+
+					@Override
+					public String getDescription() {
+						return "XML File";
+					}
+
+					@Override
+					public boolean accept(File f) {
+						return f.getName().endsWith(".xml");
+					}
+				});
+				int dialogResult = fileChooser.showOpenDialog(getBtnXmlImport());
+				if (JFileChooser.APPROVE_OPTION == dialogResult) {
+					try {
+						JAXBContext jaxbContext = JAXBContext.newInstance(DrivingRecord.class);
+						Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+						DrivingRecord record = (DrivingRecord) jaxbUnmarshaller
+								.unmarshal(fileChooser.getSelectedFile());
+						getDrivingRecord().setData(record.getData());
+					} catch (JAXBException e) {
+						e.printStackTrace();
+					}
+
+				}
+			});
+		}
+		return btnXmlImport;
+	}
+	private JButton getBtnBinExport() {
+		if (btnBinExport == null) {
+			btnBinExport = new JButton("BIN Export");
+			btnBinExport.addActionListener(l -> {
+				FileUtils.selectFileAndWrite("", true, new FileFilter() {
+
+					@Override
+					public String getDescription() {
+						return "BIN file";
+					}
+
+					@Override
+					public boolean accept(File f) {
+						return f.getName().endsWith(".bin");
+					}
+				}, getBtnXmlExport(), f -> {
+				}, f -> {
+					if(!f.getName().endsWith(".bin")){
+						return new File(f.getAbsolutePath()+".bin");
+					}
+					return f;
+				}, file -> {
+					try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
+						byte[] buf = new byte[WifiMonitorData.STRUCT_LENGTH];
+						for(WifiMonitorData data: getDrivingRecord().getData()){
+							if(!data.isMissing()){
+								fileOutputStream.write(data.writeToArray(buf));
+							}
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+						return false;
+					}
+					return true;
+				});
+
+			});
+		}
+		return btnBinExport;
+	}
+	private JButton getBtnBinImport() {
+		if (btnBinImport == null) {
+			btnBinImport = new JButton("BIN Import");
+			btnBinImport.addActionListener(l -> {
+				JFileChooser fileChooser = new JFileChooser("");
+				fileChooser.setFileFilter(new FileFilter() {
+
+					@Override
+					public String getDescription() {
+						return "BIN File";
+					}
+
+					@Override
+					public boolean accept(File f) {
+						return f.getName().endsWith(".bin");
+					}
+				});
+				int dialogResult = fileChooser.showOpenDialog(getBtnXmlImport());
+				if (JFileChooser.APPROVE_OPTION == dialogResult) {
+					try (FileInputStream fileInputStream = new FileInputStream(fileChooser.getSelectedFile())){
+						List<WifiMonitorData> newData = new ArrayList<>();
+						getDrivingRecord().clearData();
+						byte[] buf = new byte[WifiMonitorData.STRUCT_LENGTH];
+						while(fileInputStream.read(buf) != -1){
+							getDrivingRecord().addData(new WifiMonitorData(buf));
+						}
+//						getDrivingRecord().setData(newData);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+				}
+			});
+		}
+		return btnBinImport;
+	}
+	private JPanel getPanel_3() {
+		if (panel_3 == null) {
+			panel_3 = new JPanel();
+			GridBagLayout gblPanel_3 = new GridBagLayout();
+			gblPanel_3.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			gblPanel_3.rowHeights = new int[]{0, 0, 0, 0, 0};
+			gblPanel_3.columnWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+			gblPanel_3.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+			panel_3.setLayout(gblPanel_3);
+			GridBagConstraints gbcBrigthness = new GridBagConstraints();
+			gbcBrigthness.insets = new Insets(0, 0, 5, 5);
+			gbcBrigthness.gridx = 0;
+			gbcBrigthness.gridy = 0;
+			panel_3.add(getBrigthness(), gbcBrigthness);
+			GridBagConstraints gbcLblColumnCount = new GridBagConstraints();
+			gbcLblColumnCount.insets = new Insets(0, 0, 5, 5);
+			gbcLblColumnCount.gridx = 1;
+			gbcLblColumnCount.gridy = 0;
+			panel_3.add(getLblColumnCount(), gbcLblColumnCount);
+			GridBagConstraints gbcLblColumnIndex = new GridBagConstraints();
+			gbcLblColumnIndex.insets = new Insets(0, 0, 5, 5);
+			gbcLblColumnIndex.gridx = 2;
+			gbcLblColumnIndex.gridy = 0;
+			panel_3.add(getLblColumnIndex(), gbcLblColumnIndex);
+			GridBagConstraints gbcLabel = new GridBagConstraints();
+			gbcLabel.insets = new Insets(0, 0, 5, 5);
+			gbcLabel.gridx = 4;
+			gbcLabel.gridy = 0;
+			panel_3.add(getLabel(), gbcLabel);
+			GridBagConstraints gbcLabel_1 = new GridBagConstraints();
+			gbcLabel_1.insets = new Insets(0, 0, 5, 5);
+			gbcLabel_1.gridx = 6;
+			gbcLabel_1.gridy = 0;
+			panel_3.add(getLabel_1(), gbcLabel_1);
+			GridBagConstraints gbcLabel_2 = new GridBagConstraints();
+			gbcLabel_2.insets = new Insets(0, 0, 5, 5);
+			gbcLabel_2.gridx = 8;
+			gbcLabel_2.gridy = 0;
+			panel_3.add(getLabel_2(), gbcLabel_2);
+			GridBagConstraints gbcLabel_3 = new GridBagConstraints();
+			gbcLabel_3.insets = new Insets(0, 0, 5, 5);
+			gbcLabel_3.gridx = 10;
+			gbcLabel_3.gridy = 0;
+			panel_3.add(getLabel_3(), gbcLabel_3);
+			GridBagConstraints gbcSlider_1 = new GridBagConstraints();
+			gbcSlider_1.insets = new Insets(0, 0, 5, 5);
+			gbcSlider_1.gridx = 0;
+			gbcSlider_1.gridy = 1;
+			panel_3.add(getSlider_1(), gbcSlider_1);
+			GridBagConstraints gbcSpinnerColumnCount = new GridBagConstraints();
+			gbcSpinnerColumnCount.insets = new Insets(0, 0, 5, 5);
+			gbcSpinnerColumnCount.gridx = 1;
+			gbcSpinnerColumnCount.gridy = 1;
+			panel_3.add(getSpinnerColumnCount(), gbcSpinnerColumnCount);
+			GridBagConstraints gbcLblColumnWidth = new GridBagConstraints();
+			gbcLblColumnWidth.insets = new Insets(0, 0, 5, 5);
+			gbcLblColumnWidth.gridx = 2;
+			gbcLblColumnWidth.gridy = 2;
+			panel_3.add(getLblColumnWidth(), gbcLblColumnWidth);
+			GridBagConstraints gbcSpinnerColumnWidth = new GridBagConstraints();
+			gbcSpinnerColumnWidth.insets = new Insets(0, 0, 5, 5);
+			gbcSpinnerColumnWidth.gridx = 3;
+			gbcSpinnerColumnWidth.gridy = 2;
+			panel_3.add(getSpinnerColumnWidth(), gbcSpinnerColumnWidth);
+			GridBagConstraints gbcLblColumnZoom = new GridBagConstraints();
+			gbcLblColumnZoom.insets = new Insets(0, 0, 0, 5);
+			gbcLblColumnZoom.gridx = 2;
+			gbcLblColumnZoom.gridy = 3;
+			panel_3.add(getLblColumnZoom(), gbcLblColumnZoom);
+			GridBagConstraints gbcSpinnerColumnZoom = new GridBagConstraints();
+			gbcSpinnerColumnZoom.insets = new Insets(0, 0, 0, 5);
+			gbcSpinnerColumnZoom.gridx = 3;
+			gbcSpinnerColumnZoom.gridy = 3;
+			panel_3.add(getSpinnerColumnZoom(), gbcSpinnerColumnZoom);
+		}
+		return panel_3;
+	}
+	private JLabel getBrigthness() {
+		if (brigthness == null) {
+			brigthness = new JLabel("Brigthness");
+		}
+		return brigthness;
+	}
+	private JSlider getSlider_1() {
+		if (slider_1 == null) {
+			slider_1 = new JSlider();
+		}
+		return slider_1;
+	}
+	private JLabel getLblColumnCount() {
+		if (lblColumnCount == null) {
+			lblColumnCount = new JLabel("Column count");
+		}
+		return lblColumnCount;
+	}
+	private JSpinner getSpinnerColumnCount() {
+		if (spinnerColumnCount == null) {
+			spinnerColumnCount = new JSpinner();
+		}
+		return spinnerColumnCount;
+	}
+	private JLabel getLabel() {
+		if (label == null) {
+			label = new JLabel("0");
+		}
+		return label;
+	}
+	private JLabel getLabel_1() {
+		if (label_1 == null) {
+			label_1 = new JLabel("1");
+		}
+		return label_1;
+	}
+	private JLabel getLabel_2() {
+		if (label_2 == null) {
+			label_2 = new JLabel("2");
+		}
+		return label_2;
+	}
+	private JLabel getLabel_3() {
+		if (label_3 == null) {
+			label_3 = new JLabel("3");
+		}
+		return label_3;
+	}
+	private JLabel getLblColumnIndex() {
+		if (lblColumnIndex == null) {
+			lblColumnIndex = new JLabel("Column index:");
+		}
+		return lblColumnIndex;
+	}
+	private JLabel getLblColumnWidth() {
+		if (lblColumnWidth == null) {
+			lblColumnWidth = new JLabel("Column width");
+		}
+		return lblColumnWidth;
+	}
+	private JLabel getLblColumnZoom() {
+		if (lblColumnZoom == null) {
+			lblColumnZoom = new JLabel("Column zoom");
+		}
+		return lblColumnZoom;
+	}
+	private JSpinner getSpinnerColumnWidth() {
+		if (spinnerColumnWidth == null) {
+			spinnerColumnWidth = new JSpinner();
+		}
+		return spinnerColumnWidth;
+	}
+	private JSpinner getSpinnerColumnZoom() {
+		if (spinnerColumnZoom == null) {
+			spinnerColumnZoom = new JSpinner();
+		}
+		return spinnerColumnZoom;
 	}
 }
