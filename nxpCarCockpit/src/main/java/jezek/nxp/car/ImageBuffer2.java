@@ -1,7 +1,10 @@
 package jezek.nxp.car;
 
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.logging.log4j.core.appender.db.ColumnMapping;
 
 public class ImageBuffer2 extends AbstractImageBuffer {
 
@@ -10,7 +13,6 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	private int rowPosition;
 	private double brightness = 1;
 
-//	int imgZoom = 1;
 	int camImageWidth = 128;
 	int[] columnPositions;// = new int[] { 1, 130, 231, 332, 433, 535 };
 	int[] columnZoom= new int[] { 2, 2, 2, 2, 2, 2};
@@ -19,37 +21,53 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	int[] middleAxisColor = new int[] { 0xffcccccc, 0xffcccccc, 0xffcccccc, 0xffcccccc, 0xffcccccc, 0xffcccccc };
 	int[] middleAxisPosition = new int[] { 64, 25, 25, 25, 25, 25 };
 	int[] drawToColumn = new int[] { 0, 1, 2, 3, 4, 5};
-	int[] dataRowColor = new int[] { 0x0, 0xffff0000, 0xff00ff00, 0xff44ff44, 0xffff00ff, 0xff00ffff };
-//	int imageWidth = 636;
+	int[] dataRowColor = new int[] { 0x0, 0xffff0000, 0xff00ff00, 0xff44aa44, 0xff0000ff, 0xff00ffff };
 	int frameColor = 0xffff0000;
 	int voidColor = 0xffaaaaaa;
 	int missingColor = 0xff550000;
-
+	private PropertyChangeListener updateListener;
 	private DrivingRecord drivingRecord;
 
 	public ImageBuffer2(int height, DrivingRecord drivingRecord) {
+		this.height = height;
+		this.drivingRecord = drivingRecord;
+		init();
+		updateListener = evt -> update();
+		drivingRecord.addPropertyDataListener(updateListener);
+	}
+
+	public void unregisterUpdater(){
+		drivingRecord.removePropertyDataListener(updateListener);
+	}
+	
+	public void setColumns(int[] columnWidth, int[] columnZoom){
+		this.columnWidth = columnWidth;
+		this.columnZoom = columnZoom;
+		init();
+	}
+	public void setDrawToColumn(int[] drawToColumn) {
+		this.drawToColumn = drawToColumn;
+	}
+	
+	private void init(){
 		int position = 1;
 		columnPositions = new int[columnWidth.length];
 		for(int i=0;i<columnWidth.length;i++){
 			columnPositions[i] = position;
 			position += columnWidth[i]*columnZoom[i];
 		}
+		for(int i=0;i<columnWidth.length;i++){
+			middleAxisPosition[i] = (columnWidth[i])/2;
+		}
 		if (height < 1) {
 			throw new IllegalArgumentException("Wrong size or agregation.");
 		}
 		this.width = calculateWidth();
-		this.height = height;
-		this.drivingRecord = drivingRecord;
-		drivingRecord.addPropertyDataListener(evt -> update());
-		rowPosition = 0;
+		rowPosition = drivingRecord.getData().size()-1;
 	}
-
+	
 	private int calculateWidth() {
 		int value = 1;
-//		for (int i = 0; i < columnPositions.length; i++) {
-//			if (width < columnPositions[i] + columnWidth[i] + 1) {
-//				width = columnPositions[i] + columnWidth[i] + 1;
-//			}
 		for (int i = 0; i < columnWidth.length; i++) {
 			value += columnWidth[i]*columnZoom[i]+1;
 		}
@@ -76,7 +94,7 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	}
 
 	private int camPixelIntensity(WifiMonitorData data, int index, double brightness) {
-		return (int) (255 * ((double) data.getImage()[index]) / 0x0FF * brightness);
+		return (int) (255 * ((double) data.getImage()[index]/255 * brightness));
 	}
 
 	private void eraseColumn(int[] buf, int rowBegin, int columnIndex) {
@@ -86,9 +104,9 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	}
 
 	private void drawDataRow(int index, int value, int imgRowBegin, int[] buf) {
-		double recalculatedValue = columnWidth[index]*columnZoom[index] / 2000.0 * (value + 1000);
+		double recalculatedValue = columnWidth[drawToColumn[index]]*columnZoom[drawToColumn[index]] / 2000.0 * (value + 1000);
 		int bufIndex = imgRowBegin + columnPositions[drawToColumn[index]] + (int) recalculatedValue;
-		writePixel(buf, bufIndex, columnZoom[index], dataRowColor[index]);
+		writePixel(buf, bufIndex, columnZoom[drawToColumn[index]], dataRowColor[index]);
 	}
 
 	@Override
@@ -161,4 +179,18 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 			setChanged();
 		}
 	}
+
+	public double getBrightness() {
+		return brightness;
+	}
+
+	public void setBrightness(double brightness) {
+		this.brightness = brightness;
+		setChanged();
+	}
+
+	public int[] getColumnZoom() {
+		return this.columnZoom;
+	}
+	
 }

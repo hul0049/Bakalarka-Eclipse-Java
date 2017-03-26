@@ -12,7 +12,7 @@ public class UDPServer {
 	private DrivingRecord drivingRecord;
 	private Random r = new Random();
 	private long timestamp = 0;
-	private boolean fakeMode = true;
+	private boolean fakeMode = false;
 	private WifiMonitorData oldFakeData;
 	private WifiMonitorData directions;
 	private int port;
@@ -154,6 +154,14 @@ public class UDPServer {
 		
 	}
 	
+	public boolean isFakeMode() {
+		return fakeMode;
+	}
+
+	public void setFakeMode(boolean fakeMode) {
+		this.fakeMode = fakeMode;
+	}
+
 	public static void main(String[] args) {
 		new UDPServer(0, null).test();
 	}

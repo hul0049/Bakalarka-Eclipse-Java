@@ -82,6 +82,7 @@ public class AnimImage extends Canvas implements Runnable {
 
 	public void stopAnim() {
 		stop = true;
+		bf.dispose();
 		if (animator != null) {
 			animator.interrupt();
 			animator = null;
@@ -93,27 +94,28 @@ public class AnimImage extends Canvas implements Runnable {
 		Random r = new Random();
 		int counter = 0;
 		long time = System.nanoTime();
-		int[] memBuf = new int[imageWidth + imageHeight];
+//		int[] memBuf = new int[imageWidth + imageHeight];
 		do {
+			logger.debug("do anim image");
 			Graphics2D g = (Graphics2D) bf.getDrawGraphics();
-			for (int i = 0; i < memBuf.length; i++) {
-				memBuf[i] = r.nextInt();
-			}
+//			for (int i = 0; i < memBuf.length; i++) {
+//				memBuf[i] = r.nextInt();
+//			}
 			Image image = createImage(
 					new MemoryImageSource(imageWidth, imageHeight, imageBuffer.getImgData(imgData), 0, imageWidth));
 			g.drawImage(image, 0, 0, imageWidth, imageHeight, null);
 			g.dispose();
 			bf.show();
 			counter++;
-//			int row = imageBuffer.getRowPosition();
-//			while (row == imageBuffer.getRowPosition()) {
-//				try {
-//					Thread.sleep(1);
-//				} catch (InterruptedException e) {
-//					Thread.currentThread().interrupt();
-//					break;
-//				}
-//			}
+ 			while (!imageBuffer.isChanged() && !stop) {
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+ 			logger.debug("image changed + " + ((ImageBuffer2)imageBuffer).getColumnZoom()[0]);
 			if (System.nanoTime() - time > 2000000000l) {
 				fps = counter/2;
 				logger.debug("fps " + fps);

@@ -67,6 +67,8 @@ import javax.swing.JTabbedPane;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.AdjustmentEvent;
 import javax.swing.JSpinner;
+import javax.swing.JCheckBox;
+import javax.swing.SpinnerNumberModel;
 
 public class Cockpit extends JFrame {
 
@@ -148,19 +150,21 @@ public class Cockpit extends JFrame {
 	private JButton btnBinExport;
 	private JButton btnBinImport;
 	private JPanel panel_3;
-	private JLabel brigthness;
-	private JSlider slider_1;
+	private JSlider sliderBrightness2;
 	private JLabel lblColumnCount;
 	private JSpinner spinnerColumnCount;
-	private JLabel label;
-	private JLabel label_1;
-	private JLabel label_2;
-	private JLabel label_3;
+	private JLabel[] labelIndex = new JLabel[6];
 	private JLabel lblColumnIndex;
 	private JLabel lblColumnWidth;
 	private JLabel lblColumnZoom;
-	private JSpinner spinnerColumnWidth;
-	private JSpinner spinnerColumnZoom;
+	private JSpinner[] spinnerColumnWidth = new JSpinner[6];
+	private JSpinner[] spinnerColumnZoom = new JSpinner[6];
+	private JLabel lblPictureHeight;
+	private JSpinner spinnerPictureHeight;
+	private JCheckBox chckbxUseFakeData;
+	private JButton btnRecreateImage;
+	private JLabel lblDataToColumn;
+	private JSpinner[] spinnerDataColumn = new JSpinner[6];
 
 	/**
 	 * Launch the application.
@@ -1261,7 +1265,7 @@ public class Cockpit extends JFrame {
 			panelCockpit = new JPanel();
 			GridBagLayout gridBagLayout = new GridBagLayout();
 			gridBagLayout.rowWeights = new double[] { 0.0, 0.0 };
-			gridBagLayout.columnWeights = new double[] { 1.0, 0.0 };
+			gridBagLayout.columnWeights = new double[] { 1.0 };
 			panelCockpit.setLayout(gridBagLayout);
 			GridBagConstraints gbcPanelSetting = new GridBagConstraints();
 			gbcPanelSetting.insets = new Insets(5, 5, 5, 5);
@@ -1310,7 +1314,20 @@ public class Cockpit extends JFrame {
 
 	private ImageBuffer2 getImageBuffer2() {
 		if (imageBuffer2 == null) {
-			imageBuffer2 = new ImageBuffer2(500, getDrivingRecord());
+			imageBuffer2 = new ImageBuffer2((Integer)getSpinnerPictureHeight().getValue(), getDrivingRecord());
+			int columnCoun = (Integer)getSpinnerColumnCount().getValue();
+			int[] columnWidths = new int[columnCoun];
+			int[] columnZooms = new int[columnCoun];
+			for(int i=0; i<columnCoun;i++){
+				columnWidths[i] = (Integer)getSpinnerColumnWidth(i).getValue();
+				columnZooms[i] = (Integer)getSpinnerColumnZoom(i).getValue();
+			}
+			int[] data2Column = new int[6];
+			for(int i=0; i<data2Column.length;i++){
+				data2Column[i] = (Integer)getSpinnerDataColumn(i).getValue();
+			}
+			imageBuffer2.setColumns(columnWidths, columnZooms);
+			imageBuffer2.setDrawToColumn(data2Column);
 		}
 		return imageBuffer2;
 	}
@@ -1331,9 +1348,10 @@ public class Cockpit extends JFrame {
 			panel_2 = new JPanel();
 			GridBagLayout gblPanel_2 = new GridBagLayout();
 			gblPanel_2.columnWidths = new int[] { 117, 0 };
-			gblPanel_2.rowHeights = new int[] { 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			gblPanel_2.rowHeights = new int[] { 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 			gblPanel_2.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-			gblPanel_2.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+			gblPanel_2.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+					Double.MIN_VALUE };
 			panel_2.setLayout(gblPanel_2);
 			GridBagConstraints gbcTxtUdpPort = new GridBagConstraints();
 			gbcTxtUdpPort.insets = new Insets(0, 0, 5, 0);
@@ -1353,24 +1371,29 @@ public class Cockpit extends JFrame {
 			gbcBtnStop.gridx = 0;
 			gbcBtnStop.gridy = 2;
 			panel_2.add(getBtnStop(), gbcBtnStop);
+			GridBagConstraints gbcChckbxUseFakeData = new GridBagConstraints();
+			gbcChckbxUseFakeData.insets = new Insets(0, 0, 5, 0);
+			gbcChckbxUseFakeData.gridx = 0;
+			gbcChckbxUseFakeData.gridy = 3;
+			panel_2.add(getChckbxUseFakeData(), gbcChckbxUseFakeData);
 			GridBagConstraints gbcBtnXmlExport = new GridBagConstraints();
 			gbcBtnXmlExport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnXmlExport.gridx = 0;
-			gbcBtnXmlExport.gridy = 4;
+			gbcBtnXmlExport.gridy = 5;
 			panel_2.add(getBtnXmlExport(), gbcBtnXmlExport);
 			GridBagConstraints gbcBtnXmlImport = new GridBagConstraints();
 			gbcBtnXmlImport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnXmlImport.gridx = 0;
-			gbcBtnXmlImport.gridy = 6;
+			gbcBtnXmlImport.gridy = 7;
 			panel_2.add(getBtnXmlImport(), gbcBtnXmlImport);
 			GridBagConstraints gbcBtnBinExport = new GridBagConstraints();
 			gbcBtnBinExport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnBinExport.gridx = 0;
-			gbcBtnBinExport.gridy = 9;
+			gbcBtnBinExport.gridy = 10;
 			panel_2.add(getBtnBinExport(), gbcBtnBinExport);
 			GridBagConstraints gbcBtnBinImport = new GridBagConstraints();
 			gbcBtnBinImport.gridx = 0;
-			gbcBtnBinImport.gridy = 11;
+			gbcBtnBinImport.gridy = 12;
 			panel_2.add(getBtnBinImport(), gbcBtnBinImport);
 		}
 		return panel_2;
@@ -1458,8 +1481,8 @@ public class Cockpit extends JFrame {
 					}
 				}, getBtnXmlExport(), f -> {
 				}, f -> {
-					if(!f.getName().endsWith(".xml")){
-						return new File(f.getAbsolutePath()+".xml");
+					if (!f.getName().endsWith(".xml")) {
+						return new File(f.getAbsolutePath() + ".xml");
 					}
 					return f;
 				}, file -> {
@@ -1515,6 +1538,7 @@ public class Cockpit extends JFrame {
 		}
 		return btnXmlImport;
 	}
+
 	private JButton getBtnBinExport() {
 		if (btnBinExport == null) {
 			btnBinExport = new JButton("BIN Export");
@@ -1532,15 +1556,15 @@ public class Cockpit extends JFrame {
 					}
 				}, getBtnXmlExport(), f -> {
 				}, f -> {
-					if(!f.getName().endsWith(".bin")){
-						return new File(f.getAbsolutePath()+".bin");
+					if (!f.getName().endsWith(".bin")) {
+						return new File(f.getAbsolutePath() + ".bin");
 					}
 					return f;
 				}, file -> {
-					try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
+					try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
 						byte[] buf = new byte[WifiMonitorData.STRUCT_LENGTH];
-						for(WifiMonitorData data: getDrivingRecord().getData()){
-							if(!data.isMissing()){
+						for (WifiMonitorData data : getDrivingRecord().getData()) {
+							if (!data.isMissing()) {
 								fileOutputStream.write(data.writeToArray(buf));
 							}
 						}
@@ -1555,6 +1579,7 @@ public class Cockpit extends JFrame {
 		}
 		return btnBinExport;
 	}
+
 	private JButton getBtnBinImport() {
 		if (btnBinImport == null) {
 			btnBinImport = new JButton("BIN Import");
@@ -1574,14 +1599,14 @@ public class Cockpit extends JFrame {
 				});
 				int dialogResult = fileChooser.showOpenDialog(getBtnXmlImport());
 				if (JFileChooser.APPROVE_OPTION == dialogResult) {
-					try (FileInputStream fileInputStream = new FileInputStream(fileChooser.getSelectedFile())){
+					try (FileInputStream fileInputStream = new FileInputStream(fileChooser.getSelectedFile())) {
 						List<WifiMonitorData> newData = new ArrayList<>();
 						getDrivingRecord().clearData();
 						byte[] buf = new byte[WifiMonitorData.STRUCT_LENGTH];
-						while(fileInputStream.read(buf) != -1){
+						while (fileInputStream.read(buf) != -1) {
 							getDrivingRecord().addData(new WifiMonitorData(buf));
 						}
-//						getDrivingRecord().setData(newData);
+						// getDrivingRecord().setData(newData);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -1591,20 +1616,16 @@ public class Cockpit extends JFrame {
 		}
 		return btnBinImport;
 	}
+
 	private JPanel getPanel_3() {
 		if (panel_3 == null) {
 			panel_3 = new JPanel();
+			panel_3.setBorder(new TitledBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null),
+					"Image config", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			GridBagLayout gblPanel_3 = new GridBagLayout();
-			gblPanel_3.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			gblPanel_3.rowHeights = new int[]{0, 0, 0, 0, 0};
-			gblPanel_3.columnWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-			gblPanel_3.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+			gblPanel_3.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 };
+			gblPanel_3.rowHeights = new int[] { 0, 0, 0, 0, 0 };
 			panel_3.setLayout(gblPanel_3);
-			GridBagConstraints gbcBrigthness = new GridBagConstraints();
-			gbcBrigthness.insets = new Insets(0, 0, 5, 5);
-			gbcBrigthness.gridx = 0;
-			gbcBrigthness.gridy = 0;
-			panel_3.add(getBrigthness(), gbcBrigthness);
 			GridBagConstraints gbcLblColumnCount = new GridBagConstraints();
 			gbcLblColumnCount.insets = new Insets(0, 0, 5, 5);
 			gbcLblColumnCount.gridx = 1;
@@ -1615,31 +1636,34 @@ public class Cockpit extends JFrame {
 			gbcLblColumnIndex.gridx = 2;
 			gbcLblColumnIndex.gridy = 0;
 			panel_3.add(getLblColumnIndex(), gbcLblColumnIndex);
-			GridBagConstraints gbcLabel = new GridBagConstraints();
-			gbcLabel.insets = new Insets(0, 0, 5, 5);
-			gbcLabel.gridx = 4;
-			gbcLabel.gridy = 0;
-			panel_3.add(getLabel(), gbcLabel);
-			GridBagConstraints gbcLabel_1 = new GridBagConstraints();
-			gbcLabel_1.insets = new Insets(0, 0, 5, 5);
-			gbcLabel_1.gridx = 6;
-			gbcLabel_1.gridy = 0;
-			panel_3.add(getLabel_1(), gbcLabel_1);
-			GridBagConstraints gbcLabel_2 = new GridBagConstraints();
-			gbcLabel_2.insets = new Insets(0, 0, 5, 5);
-			gbcLabel_2.gridx = 8;
-			gbcLabel_2.gridy = 0;
-			panel_3.add(getLabel_2(), gbcLabel_2);
-			GridBagConstraints gbcLabel_3 = new GridBagConstraints();
-			gbcLabel_3.insets = new Insets(0, 0, 5, 5);
-			gbcLabel_3.gridx = 10;
-			gbcLabel_3.gridy = 0;
-			panel_3.add(getLabel_3(), gbcLabel_3);
+			for (int i = 0; i < 6; i++) {
+				GridBagConstraints gbcLabel_1 = new GridBagConstraints();
+				gbcLabel_1.insets = new Insets(0, 0, 5, 5);
+				gbcLabel_1.gridx = 3 + i;
+				gbcLabel_1.gridy = 0;
+				panel_3.add(getLabelIndex(i), gbcLabel_1);
+				GridBagConstraints gbcSpinnerColumnWidth = new GridBagConstraints();
+				gbcSpinnerColumnWidth.insets = new Insets(0, 0, 5, 5);
+				gbcSpinnerColumnWidth.gridx = 3 + i;
+				gbcSpinnerColumnWidth.gridy = 1;
+				panel_3.add(getSpinnerColumnWidth(i), gbcSpinnerColumnWidth);
+				GridBagConstraints gbcSpinnerColumnZoom = new GridBagConstraints();
+				gbcSpinnerColumnZoom.insets = new Insets(0, 0, 5, 5);
+				gbcSpinnerColumnZoom.gridx = 3 + i;
+				gbcSpinnerColumnZoom.gridy = 2;
+				panel_3.add(getSpinnerColumnZoom(i), gbcSpinnerColumnZoom);
+				GridBagConstraints gbcSpinnerDataColumn = new GridBagConstraints();
+				gbcSpinnerDataColumn.insets = new Insets(0, 0, 5, 5);
+				gbcSpinnerDataColumn.gridx = 3+i;
+				gbcSpinnerDataColumn.gridy = 3;
+				panel_3.add(getSpinnerDataColumn(i), gbcSpinnerDataColumn);
+			}
 			GridBagConstraints gbcSlider_1 = new GridBagConstraints();
+			gbcSlider_1.gridheight = 2;
 			gbcSlider_1.insets = new Insets(0, 0, 5, 5);
 			gbcSlider_1.gridx = 0;
 			gbcSlider_1.gridy = 1;
-			panel_3.add(getSlider_1(), gbcSlider_1);
+			panel_3.add(getSliderBrightness2(), gbcSlider_1);
 			GridBagConstraints gbcSpinnerColumnCount = new GridBagConstraints();
 			gbcSpinnerColumnCount.insets = new Insets(0, 0, 5, 5);
 			gbcSpinnerColumnCount.gridx = 1;
@@ -1648,102 +1672,187 @@ public class Cockpit extends JFrame {
 			GridBagConstraints gbcLblColumnWidth = new GridBagConstraints();
 			gbcLblColumnWidth.insets = new Insets(0, 0, 5, 5);
 			gbcLblColumnWidth.gridx = 2;
-			gbcLblColumnWidth.gridy = 2;
+			gbcLblColumnWidth.gridy = 1;
 			panel_3.add(getLblColumnWidth(), gbcLblColumnWidth);
-			GridBagConstraints gbcSpinnerColumnWidth = new GridBagConstraints();
-			gbcSpinnerColumnWidth.insets = new Insets(0, 0, 5, 5);
-			gbcSpinnerColumnWidth.gridx = 3;
-			gbcSpinnerColumnWidth.gridy = 2;
-			panel_3.add(getSpinnerColumnWidth(), gbcSpinnerColumnWidth);
+			GridBagConstraints gbcLblPictureHeight = new GridBagConstraints();
+			gbcLblPictureHeight.insets = new Insets(0, 0, 5, 5);
+			gbcLblPictureHeight.gridx = 1;
+			gbcLblPictureHeight.gridy = 2;
+			panel_3.add(getLblPictureHeight(), gbcLblPictureHeight);
 			GridBagConstraints gbcLblColumnZoom = new GridBagConstraints();
-			gbcLblColumnZoom.insets = new Insets(0, 0, 0, 5);
+			gbcLblColumnZoom.insets = new Insets(0, 0, 5, 5);
 			gbcLblColumnZoom.gridx = 2;
-			gbcLblColumnZoom.gridy = 3;
+			gbcLblColumnZoom.gridy = 2;
 			panel_3.add(getLblColumnZoom(), gbcLblColumnZoom);
-			GridBagConstraints gbcSpinnerColumnZoom = new GridBagConstraints();
-			gbcSpinnerColumnZoom.insets = new Insets(0, 0, 0, 5);
-			gbcSpinnerColumnZoom.gridx = 3;
-			gbcSpinnerColumnZoom.gridy = 3;
-			panel_3.add(getSpinnerColumnZoom(), gbcSpinnerColumnZoom);
+			GridBagConstraints gbcSpinnerPictureHeight = new GridBagConstraints();
+			gbcSpinnerPictureHeight.insets = new Insets(0, 0, 5, 5);
+			gbcSpinnerPictureHeight.gridx = 1;
+			gbcSpinnerPictureHeight.gridy = 3;
+			panel_3.add(getSpinnerPictureHeight(), gbcSpinnerPictureHeight);
+			GridBagConstraints gbcLblDataToColumn = new GridBagConstraints();
+			gbcLblDataToColumn.insets = new Insets(0, 0, 5, 5);
+			gbcLblDataToColumn.gridx = 2;
+			gbcLblDataToColumn.gridy = 3;
+			panel_3.add(getLblDataToColumn(), gbcLblDataToColumn);
+			GridBagConstraints gbcBtnRecreateImage = new GridBagConstraints();
+			gbcBtnRecreateImage.gridx = 10;
+			gbcBtnRecreateImage.gridy = 4;
+			panel_3.add(getBtnRecreateImage(), gbcBtnRecreateImage);
 		}
 		return panel_3;
 	}
-	private JLabel getBrigthness() {
-		if (brigthness == null) {
-			brigthness = new JLabel("Brigthness");
+
+	private JSlider getSliderBrightness2() {
+		if (sliderBrightness2 == null) {
+			sliderBrightness2 = new JSlider();
+			sliderBrightness2
+					.addChangeListener(e -> getImageBuffer2().setBrightness(getSliderBrightness2().getValue() / 100.0));
+			sliderBrightness2.setPaintLabels(true);
+			sliderBrightness2.setBorder(
+					new TitledBorder(null, "Brightness", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+			sliderBrightness2.setMinorTickSpacing(20);
+			sliderBrightness2.setValue(100);
+			sliderBrightness2.setMaximum(800);
+			sliderBrightness2.setMinimum(100);
+			sliderBrightness2.setMajorTickSpacing(100);
+			sliderBrightness2.setPaintTicks(true);
+			sliderBrightness2.setToolTipText("Brightness");
+			Dictionary<Integer, JComponent> labels = new Hashtable<>();
+			labels.put(100, new JLabel("1"));
+			labels.put(200, new JLabel("2"));
+			labels.put(300, new JLabel("3"));
+			labels.put(400, new JLabel("4"));
+			labels.put(500, new JLabel("5"));
+			labels.put(600, new JLabel("6"));
+			labels.put(700, new JLabel("7"));
+			labels.put(800, new JLabel("8"));
+			sliderBrightness2.setLabelTable(labels);
 		}
-		return brigthness;
+		return sliderBrightness2;
 	}
-	private JSlider getSlider_1() {
-		if (slider_1 == null) {
-			slider_1 = new JSlider();
-		}
-		return slider_1;
-	}
+
 	private JLabel getLblColumnCount() {
 		if (lblColumnCount == null) {
 			lblColumnCount = new JLabel("Column count");
 		}
 		return lblColumnCount;
 	}
+
 	private JSpinner getSpinnerColumnCount() {
 		if (spinnerColumnCount == null) {
 			spinnerColumnCount = new JSpinner();
+			spinnerColumnCount.setModel(new SpinnerNumberModel(6, 1, 6, 1));
 		}
 		return spinnerColumnCount;
 	}
-	private JLabel getLabel() {
-		if (label == null) {
-			label = new JLabel("0");
+
+	private JLabel getLabelIndex(int index) {
+		if (labelIndex[index] == null) {
+			labelIndex[index] = new JLabel(Integer.toString(index));
 		}
-		return label;
+		return labelIndex[index];
 	}
-	private JLabel getLabel_1() {
-		if (label_1 == null) {
-			label_1 = new JLabel("1");
-		}
-		return label_1;
-	}
-	private JLabel getLabel_2() {
-		if (label_2 == null) {
-			label_2 = new JLabel("2");
-		}
-		return label_2;
-	}
-	private JLabel getLabel_3() {
-		if (label_3 == null) {
-			label_3 = new JLabel("3");
-		}
-		return label_3;
-	}
+
 	private JLabel getLblColumnIndex() {
 		if (lblColumnIndex == null) {
 			lblColumnIndex = new JLabel("Column index:");
 		}
 		return lblColumnIndex;
 	}
+
 	private JLabel getLblColumnWidth() {
 		if (lblColumnWidth == null) {
 			lblColumnWidth = new JLabel("Column width");
 		}
 		return lblColumnWidth;
 	}
+
 	private JLabel getLblColumnZoom() {
 		if (lblColumnZoom == null) {
 			lblColumnZoom = new JLabel("Column zoom");
 		}
 		return lblColumnZoom;
 	}
-	private JSpinner getSpinnerColumnWidth() {
-		if (spinnerColumnWidth == null) {
-			spinnerColumnWidth = new JSpinner();
+
+	private JSpinner getSpinnerColumnWidth(int index) {
+		if (spinnerColumnWidth[index] == null) {
+			spinnerColumnWidth[index] = new JSpinner();
+			if (index == 0) {
+				spinnerColumnWidth[index].setModel(new SpinnerNumberModel(WifiMonitorData.NUM_LINE_SCAN,
+						WifiMonitorData.NUM_LINE_SCAN, WifiMonitorData.NUM_LINE_SCAN, 1));
+				spinnerColumnWidth[index].setEnabled(false);
+			} else {
+				spinnerColumnWidth[index].setModel(new SpinnerNumberModel(49, 1, 200, 10));
+			}
 		}
-		return spinnerColumnWidth;
+		return spinnerColumnWidth[index];
 	}
-	private JSpinner getSpinnerColumnZoom() {
-		if (spinnerColumnZoom == null) {
-			spinnerColumnZoom = new JSpinner();
+
+	private JSpinner getSpinnerColumnZoom(int index) {
+		if (spinnerColumnZoom[index] == null) {
+			spinnerColumnZoom[index] = new JSpinner();
+			spinnerColumnZoom[index].setModel(new SpinnerNumberModel(2, 1, 10, 1));
+
 		}
-		return spinnerColumnZoom;
+		return spinnerColumnZoom[index];
+	}
+
+	private JLabel getLblPictureHeight() {
+		if (lblPictureHeight == null) {
+			lblPictureHeight = new JLabel("Picture height");
+		}
+		return lblPictureHeight;
+	}
+
+	private JSpinner getSpinnerPictureHeight() {
+		if (spinnerPictureHeight == null) {
+			spinnerPictureHeight = new JSpinner();
+			spinnerPictureHeight.setModel(new SpinnerNumberModel(500, 10, 900, 25));
+		}
+		return spinnerPictureHeight;
+	}
+
+	private JCheckBox getChckbxUseFakeData() {
+		if (chckbxUseFakeData == null) {
+			chckbxUseFakeData = new JCheckBox("Use fake data");
+			chckbxUseFakeData.setSelected(getUdpServer().isFakeMode());
+			chckbxUseFakeData.addActionListener(evt -> {
+				getUdpServer().setFakeMode(getChckbxUseFakeData().isSelected());
+			});
+		}
+		return chckbxUseFakeData;
+	}
+	private JButton getBtnRecreateImage() {
+		if (btnRecreateImage == null) {
+			btnRecreateImage = new JButton("Recreate Image");
+			btnRecreateImage.addActionListener(evt -> {
+				AnimImage animImage =  getAnmImgMonitor();
+				getPanelMonitor().remove(animImage);
+				animImage.stopAnim();
+				getImageBuffer2().unregisterUpdater();
+				imageBuffer2 = null;
+				anmImgMonitor = null;
+				getPanelMonitor().add(getAnmImgMonitor(), BorderLayout.CENTER);
+				getPanelMonitor().revalidate();
+				getAnmImgMonitor().setVisible(false);
+				getAnmImgMonitor().setVisible(true);
+				getAnmImgMonitor().startAnim();
+				getImageBuffer2().setChanged();
+			});
+		}
+		return btnRecreateImage;
+	}
+	private JLabel getLblDataToColumn() {
+		if (lblDataToColumn == null) {
+			lblDataToColumn = new JLabel("Data to column");
+		}
+		return lblDataToColumn;
+	}
+	private JSpinner getSpinnerDataColumn(int index) {
+		if (spinnerDataColumn[index] == null) {
+			spinnerDataColumn[index] = new JSpinner();
+			spinnerDataColumn[index].setModel(new SpinnerNumberModel(index, 0, 5, 1));
+		}
+		return spinnerDataColumn[index];
 	}
 }
