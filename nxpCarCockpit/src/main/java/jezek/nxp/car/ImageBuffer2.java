@@ -1,5 +1,6 @@
 package jezek.nxp.car;
 
+import java.awt.Color;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	private int height;
 	private int rowPosition;
 	private double brightness = 1;
+	private int heightZoom= 1;
 
 	int camImageWidth = 128;
 	int[] columnPositions;// = new int[] { 1, 130, 231, 332, 433, 535 };
@@ -90,6 +92,12 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		value = (value << 8) + intensity;
 		value = (value << 8) + intensity;
 		value = (value << 8) + intensity;
+//		if(intensity <= 50){
+//			value = 0xff0000ff;sele
+//		}
+//		if(intensity > 150){
+//			value = 0xff00ff00;
+//		}
 		return value;
 	}
 
@@ -97,9 +105,13 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		return (int) (255 * ((double) data.getImage()[index]/255 * brightness));
 	}
 
-	private void eraseColumn(int[] buf, int rowBegin, int columnIndex) {
+	private void eraseColumn(int[] buf, int rowBegin, int columnIndex, boolean selected) {
+		int color = columnBackground[columnIndex];
+		if(selected){
+			color = new Color(color).darker().getRGB();
+		}
 		for (int i = 0; i < columnWidth[columnIndex]*columnZoom[columnIndex]; i++) {
-			buf[rowBegin + columnPositions[columnIndex] + i] = columnBackground[columnIndex];
+			buf[rowBegin + columnPositions[columnIndex] + i] = color;
 		}
 	}
 
@@ -119,17 +131,17 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 
 			for (int imageRowIndex = 0; imageRowIndex < height; imageRowIndex++) {
 				int imgRowBegin = imageRowIndex * width;
-				if (currentRowPosition - imageRowIndex < 0 || drivingRecord.getData().isEmpty() || 
-						drivingRecord.getData().get(currentRowPosition - imageRowIndex).isMissing()) {
-					int color = currentRowPosition - imageRowIndex < 0?voidColor:missingColor;
+				if (currentRowPosition - imageRowIndex/heightZoom < 0 || drivingRecord.getData().isEmpty() || 
+						drivingRecord.getData().get(currentRowPosition - imageRowIndex/heightZoom).isMissing()) {
+					int color = currentRowPosition - imageRowIndex/heightZoom < 0?voidColor:missingColor;
 					for (int i = 0; i < width; i++) {
 						buf[imgRowBegin + i] = color;
 					}
 					continue;
 				}
-				WifiMonitorData wifiMonitorData = drivingRecord.getData().get(currentRowPosition - imageRowIndex);
+				WifiMonitorData wifiMonitorData = drivingRecord.getData().get(currentRowPosition - (imageRowIndex/heightZoom));
 				for(int i=0;i<columnWidth.length; i++){
-						eraseColumn(buf, imgRowBegin, i);
+						eraseColumn(buf, imgRowBegin, i, wifiMonitorData.isSelected());
 				}
 				drawFrameAndAxis(buf, imgRowBegin);
 				drawCamData(buf, currentRowPosition, imageRowIndex, imgRowBegin);
@@ -148,7 +160,7 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		int columnBegin = imgRowBegin + columnPositions[0];
 		for (int camImageIndex = 0; camImageIndex < camImageWidth; camImageIndex++) {
 			writePixel(buf, columnBegin + camImageIndex * columnZoom[0], columnZoom[0], bwIntensity(
-					camPixelIntensity(drivingRecord.getData().get(currentRowPosition - imageRowIndex), camImageIndex, brightness)));
+					camPixelIntensity(drivingRecord.getData().get(currentRowPosition - imageRowIndex/heightZoom), camImageIndex, brightness)));
 		}
 		return columnBegin;
 	}
@@ -192,5 +204,22 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	public int[] getColumnZoom() {
 		return this.columnZoom;
 	}
+
+	public int getHeightZoom() {
+		return heightZoom;
+	}
+
+	public void setHeightZoom(int heightZoom) {
+		this.heightZoom = heightZoom;
+	}
 	
+	public void selectRow(int imageRowIndex){
+		int selectedDataIndex = rowPosition - ((imageRowIndex-1)/heightZoom);
+		if(selectedDataIndex < 0 || selectedDataIndex > drivingRecord.getData().size()){
+			return;
+		}
+		WifiMonitorData data = drivingRecord.getData().get(selectedDataIndex);
+		data.setSelected(!data.isSelected());
+		setChanged();
+	}
 }

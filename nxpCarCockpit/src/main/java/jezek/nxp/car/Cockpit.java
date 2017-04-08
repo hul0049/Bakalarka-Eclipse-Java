@@ -69,6 +69,10 @@ import java.awt.event.AdjustmentEvent;
 import javax.swing.JSpinner;
 import javax.swing.JCheckBox;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.JRadioButton;
+import javax.swing.ButtonGroup;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
 
 public class Cockpit extends JFrame {
 
@@ -78,7 +82,8 @@ public class Cockpit extends JFrame {
 	private static int IMAGE_WIDTH_ZOOM = 4;
 
 	private AnimImage animImage;
-	private Rs485Line rs485Line;
+	private CommunicationWrapper communicationWrapper;
+	private Tfc tfc;
 	private ImageBuffer imageBuffer;
 	private ImageBuffer2 imageBuffer2;
 	private JPanel panelCamerra;
@@ -122,7 +127,7 @@ public class Cockpit extends JFrame {
 	private JToggleButton tglbtnServo;
 	private JPanel panelStearingTitle;
 	private JPanel panelStearing;
-	private JPanel panel_1;
+	private JPanel panel1;
 	private JButton btnSetting;
 	private JPanel panelConnect;
 	private JLabel lblComPort;
@@ -139,7 +144,7 @@ public class Cockpit extends JFrame {
 	private JPanel panelMonitor;
 	private AnimImage anmImgMonitor;
 	private UDPServer udpServer;
-	private JPanel panel_2;
+	private JPanel panel2;
 	private JButton btnStop;
 	private JButton btnStart;
 	private JScrollBar scrollBar;
@@ -149,7 +154,7 @@ public class Cockpit extends JFrame {
 	private JButton btnXmlImport;
 	private JButton btnBinExport;
 	private JButton btnBinImport;
-	private JPanel panel_3;
+	private JPanel panel3;
 	private JSlider sliderBrightness2;
 	private JLabel lblColumnCount;
 	private JSpinner spinnerColumnCount;
@@ -165,6 +170,16 @@ public class Cockpit extends JFrame {
 	private JButton btnRecreateImage;
 	private JLabel lblDataToColumn;
 	private JSpinner[] spinnerDataColumn = new JSpinner[6];
+	private JButton btnClear;
+	private JButton btnHistogram;
+	private JButton btnGradient;
+	private JRadioButton rdbtnUsbWindows;
+	private JRadioButton rdbtnUsbLinux;
+	private JRadioButton rdbtnTcp;
+	private ButtonGroup buttonGroup;
+	private JButton btnDisconnect;
+	private JSpinner spnHeightZoom;
+	private JLabel lblHeightZoom;
 
 	/**
 	 * Launch the application.
@@ -187,8 +202,9 @@ public class Cockpit extends JFrame {
 	 */
 	public Cockpit() {
 		getPanelCockpit().setBackground(Color.RED);
-
+		getButtonGroup();
 		initialize();
+		getRdbtnUsbWindows().doClick();
 	}
 
 	private void initialize() {
@@ -213,11 +229,28 @@ public class Cockpit extends JFrame {
 	/**
 	 * @wbp.nonvisual location=151,739
 	 */
-	private Rs485Line getRs485Line() {
-		if (rs485Line == null) {
-			rs485Line = new Rs485Line("192.168.46.193");
+	private CommunicationWrapper getCommunicationWrapper() {
+		if (communicationWrapper == null) {
+			if (getRdbtnUsbWindows().getModel().isSelected()) {
+				communicationWrapper = new CommunicationWrapperWinUsb(getTfc(), getTxtComPort().getText());
+			} else if (getRdbtnUsbLinux().getModel().isSelected()) {
+				communicationWrapper = new CommunicationWrapperLinuxUsb(getTfc(),
+						"/dev/tty" + getTxtComPort().getText());
+			} else if (getRdbtnTcp().getModel().isSelected()) {
+				communicationWrapper = new CommunicationWrapperTcp(getTfc(), getTxtComPort().getText());
+			}
+			// communicationWrapper = new CommunicationWrapperTcp(getTfc(),
+			// "192.168.46.193", 40460);
+			// getRs485Line().setComPort(getTxtComPort().getText());
 		}
-		return rs485Line;
+		return communicationWrapper;
+	}
+
+	private Tfc getTfc() {
+		if (tfc == null) {
+			tfc = new Tfc();
+		}
+		return tfc;
 	}
 
 	/**
@@ -226,7 +259,7 @@ public class Cockpit extends JFrame {
 	private ImageBuffer getImageBuffer() {
 		if (imageBuffer == null) {
 			imageBuffer = new ImageBuffer(128, IMAGE_WIDTH_ZOOM, IMAGE_HEIGHT, 1);
-			getRs485Line().getTfc().addImageBuffer(imageBuffer);
+			getTfc().addImageBuffer(imageBuffer);
 		}
 		return imageBuffer;
 	}
@@ -284,12 +317,12 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			GridBagLayout gblPanelControl = new GridBagLayout();
 			panelControl.setLayout(gblPanelControl);
-			GridBagConstraints gbcPanel_1 = new GridBagConstraints();
-			gbcPanel_1.insets = new Insets(0, 0, 5, 5);
-			gbcPanel_1.fill = GridBagConstraints.BOTH;
-			gbcPanel_1.gridx = 0;
-			gbcPanel_1.gridy = 0;
-			panelControl.add(getPanel_1_5(), gbcPanel_1);
+			GridBagConstraints gbcPanel1 = new GridBagConstraints();
+			gbcPanel1.insets = new Insets(0, 0, 5, 5);
+			gbcPanel1.fill = GridBagConstraints.BOTH;
+			gbcPanel1.gridx = 0;
+			gbcPanel1.gridy = 0;
+			panelControl.add(getPanel1_5(), gbcPanel1);
 			GridBagConstraints gbcPanelStearingTitle = new GridBagConstraints();
 			gbcPanelStearingTitle.gridwidth = 0;
 			gbcPanelStearingTitle.weighty = 1.0;
@@ -297,7 +330,7 @@ public class Cockpit extends JFrame {
 			gbcPanelStearingTitle.fill = GridBagConstraints.BOTH;
 			gbcPanelStearingTitle.gridx = 0;
 			gbcPanelStearingTitle.gridy = 2;
-			panelControl.add(getPanel_1_3(), gbcPanelStearingTitle);
+			panelControl.add(getPanelStearingTitle(), gbcPanelStearingTitle);
 		}
 		return panelControl;
 	}
@@ -314,7 +347,7 @@ public class Cockpit extends JFrame {
 			gbcPanelNumericData.weighty = 1.0;
 			gbcPanelNumericData.insets = new Insets(0, 0, 0, 5);
 			gbcPanelNumericData.fill = GridBagConstraints.BOTH;
-			panelData.add(getPanel_1_1(), gbcPanelNumericData);
+			panelData.add(getPanel1_1(), gbcPanelNumericData);
 			GridBagConstraints gbcPanelCamerra = new GridBagConstraints();
 			gbcPanelCamerra.anchor = GridBagConstraints.NORTHWEST;
 			panelData.add(getPanelCamerra(), gbcPanelCamerra);
@@ -472,7 +505,7 @@ public class Cockpit extends JFrame {
 		return tglbtnButton1;
 	}
 
-	private JPanel getPanel_1_1() {
+	private JPanel getPanel1_1() {
 		if (panelNumericData == null) {
 			panelNumericData = new JPanel();
 			GridBagLayout gblPanelNumericData = new GridBagLayout();
@@ -512,7 +545,7 @@ public class Cockpit extends JFrame {
 			gbcPanelAnalogText.gridy = 4;
 			gbcPanelAnalogText.fill = GridBagConstraints.HORIZONTAL;
 			gbcPanelAnalogText.anchor = GridBagConstraints.NORTH;
-			panelNumericData.add(getPanel_1(), gbcPanelAnalogText);
+			panelNumericData.add(getPanel1(), gbcPanelAnalogText);
 			Thread numericDataUpdater = new Thread(() -> updateAnalogValues());
 			numericDataUpdater.start();
 		}
@@ -521,20 +554,18 @@ public class Cockpit extends JFrame {
 
 	private void updateAnalogValues() {
 		while (!Thread.currentThread().isInterrupted()) {
-			Tfc tfc = getRs485Line().getTfc();
-			getTglbtnButton2().setSelected(tfc.getPushButton(1) != 0);
-			getTglbtnButton1().setSelected(tfc.getPushButton(0) != 0);
-			getTglbtnDipswitch1().setSelected((tfc.getDIPSwitch() & 1) != 0);
-			getTglbtnDipswitch2().setSelected((tfc.getDIPSwitch() & 2) != 0);
-			getTglbtnDipswitch3().setSelected((tfc.getDIPSwitch() & 4) != 0);
-			getTglbtnDipswitch4().setSelected((tfc.getDIPSwitch() & 8) != 0);
-			getLblPot1Value().setText(String.format("%d", tfc.ReadPot_i(0)));
-			getLblPot2Value().setText(String.format("%d", tfc.ReadPot_i(1)));
-			getLblFbAvalue().setText(String.format("%fA", tfc.ReadFB_f(0)));
-			getLblFbBvalue().setText(String.format("%fA", tfc.ReadFB_f(1)));
-			getLblBatteryValue().setText(String.format("%fV", tfc.ReadBatteryVoltage_f()));
-			// ((TitledBorder)getPanelCamerra().getBorder()).setTitle("Camerra
-			// Data FPS: " + getAnimImage().getFps());
+			Tfc useedTfc = getTfc();
+			getTglbtnButton2().setSelected(useedTfc.getPushButton(1) != 0);
+			getTglbtnButton1().setSelected(useedTfc.getPushButton(0) != 0);
+			getTglbtnDipswitch1().setSelected((useedTfc.getDIPSwitch() & 1) != 0);
+			getTglbtnDipswitch2().setSelected((useedTfc.getDIPSwitch() & 2) != 0);
+			getTglbtnDipswitch3().setSelected((useedTfc.getDIPSwitch() & 4) != 0);
+			getTglbtnDipswitch4().setSelected((useedTfc.getDIPSwitch() & 8) != 0);
+			getLblPot1Value().setText(String.format("%d", useedTfc.ReadPot_i(0)));
+			getLblPot2Value().setText(String.format("%d", useedTfc.ReadPot_i(1)));
+			getLblFbAvalue().setText(String.format("%fA", useedTfc.ReadFB_f(0)));
+			getLblFbBvalue().setText(String.format("%fA", useedTfc.ReadFB_f(1)));
+			getLblBatteryValue().setText(String.format("%fV", useedTfc.ReadBatteryVoltage_f()));
 			try {
 				Thread.sleep(300);
 			} catch (InterruptedException e) {
@@ -543,7 +574,7 @@ public class Cockpit extends JFrame {
 		}
 	}
 
-	private JPanel getPanel_1() {
+	private JPanel getPanel1() {
 		if (panelAnalogText == null) {
 			panelAnalogText = new JPanel();
 			panelAnalogText.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null),
@@ -724,12 +755,12 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			sliderServo0.addChangeListener(e -> {
 				sliderUpdateTitle(getSliderServo0(), "Center - ");
-				getRs485Line().getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
+				getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
 						(short) getSliderMaxLrServo0().getValue());
 
 			});
 			sliderUpdateTitle(sliderServo0, "Center - ");
-			getRs485Line().getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
+			getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
 					(short) getSliderMaxLrServo0().getValue());
 		}
 		return sliderServo0;
@@ -752,11 +783,11 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			sliderServo1.addChangeListener(e -> {
 				sliderUpdateTitle(getSliderServo1(), "Center - ");
-				getRs485Line().getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
+				getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
 						(short) getSliderMaxLrServo1().getValue());
 			});
 			sliderUpdateTitle(sliderServo0, "Center - ");
-			getRs485Line().getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
+			getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
 					(short) getSliderMaxLrServo1().getValue());
 		}
 		return sliderServo1;
@@ -820,11 +851,11 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			sliderMaxLrServo0.addChangeListener(e -> {
 				sliderUpdateTitle(getSliderMaxLrServo0(), "Max LR - ");
-				getRs485Line().getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
+				getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
 						(short) getSliderMaxLrServo0().getValue());
 			});
 			sliderUpdateTitle(sliderMaxLrServo0, "Max LR - ");
-			getRs485Line().getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
+			getTfc().setServoCalibration(0, (short) getSliderServo0().getValue(),
 					(short) getSliderMaxLrServo0().getValue());
 
 		}
@@ -845,11 +876,11 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			sliderMaxLrServo1.addChangeListener(e -> {
 				sliderUpdateTitle(getSliderMaxLrServo1(), "Max LR - ");
-				getRs485Line().getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
+				getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
 						(short) getSliderMaxLrServo1().getValue());
 			});
 			sliderUpdateTitle(sliderMaxLrServo1, "Max LR - ");
-			getRs485Line().getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
+			getTfc().setServoCalibration(1, (short) getSliderServo1().getValue(),
 					(short) getSliderMaxLrServo1().getValue());
 		}
 		return sliderMaxLrServo1;
@@ -868,10 +899,10 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			sliderPwmMax.addChangeListener(e -> {
 				sliderUpdateTitle(getSliderPwmMax(), "PWM max - ");
-				getRs485Line().getTfc().setPWMMax((short) getSliderPwmMax().getValue());
+				getTfc().setPWMMax((short) getSliderPwmMax().getValue());
 			});
 			sliderUpdateTitle(sliderPwmMax, "PWM max - ");
-			getRs485Line().getTfc().setPWMMax((short) getSliderPwmMax().getValue());
+			getTfc().setPWMMax((short) getSliderPwmMax().getValue());
 		}
 		return sliderPwmMax;
 	}
@@ -915,7 +946,7 @@ public class Cockpit extends JFrame {
 			tglbtnLed1 = new JToggleButton("LED1");
 			tglbtnLed1.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
-					getRs485Line().getTfc().setLED(0, getTglbtnLed1().getModel().isSelected());
+					getTfc().setLED(0, getTglbtnLed1().getModel().isSelected());
 				}
 			});
 		}
@@ -925,10 +956,8 @@ public class Cockpit extends JFrame {
 	private JToggleButton getTglbtnLed2() {
 		if (tglbtnLed2 == null) {
 			tglbtnLed2 = new JToggleButton("LED2");
-			tglbtnLed2.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					getRs485Line().getTfc().setLED(1, getTglbtnLed2().getModel().isSelected());
-				}
+			tglbtnLed2.addChangeListener(e -> {
+				getTfc().setLED(1, getTglbtnLed2().getModel().isSelected());
 			});
 		}
 		return tglbtnLed2;
@@ -937,10 +966,9 @@ public class Cockpit extends JFrame {
 	private JToggleButton getTglbtnLed3() {
 		if (tglbtnLed3 == null) {
 			tglbtnLed3 = new JToggleButton("LED3");
-			tglbtnLed3.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getRs485Line().getTfc().setLED(2, getTglbtnLed3().getModel().isSelected());
-				}
+			tglbtnLed3.addActionListener(e -> {
+				getTfc().setLED(2, getTglbtnLed3().getModel().isSelected());
+
 			});
 		}
 		return tglbtnLed3;
@@ -949,16 +977,14 @@ public class Cockpit extends JFrame {
 	private JToggleButton getTglbtnLed4() {
 		if (tglbtnLed4 == null) {
 			tglbtnLed4 = new JToggleButton("LED4");
-			tglbtnLed4.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getRs485Line().getTfc().setLED(3, getTglbtnLed4().getModel().isSelected());
-				}
+			tglbtnLed4.addActionListener(e -> {
+				getTfc().setLED(3, getTglbtnLed4().getModel().isSelected());
 			});
 		}
 		return tglbtnLed4;
 	}
 
-	private JPanel getPanel_1_2() {
+	private JPanel getPanel1_2() {
 		if (panelMotorsOnOff == null) {
 			panelMotorsOnOff = new JPanel();
 			panelMotorsOnOff.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null),
@@ -983,12 +1009,8 @@ public class Cockpit extends JFrame {
 	private JToggleButton getTglbtnPwm() {
 		if (tglbtnPwm == null) {
 			tglbtnPwm = new JToggleButton("PWM");
-			tglbtnPwm.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					getRs485Line().getTfc()
-							.MotorPWMOnOff(getTglbtnPwm().getModel().isSelected() ? (byte) 1 : ((byte) 0));
-				}
-			});
+			tglbtnPwm.addChangeListener(
+					e -> getTfc().MotorPWMOnOff(getTglbtnPwm().getModel().isSelected() ? (byte) 1 : ((byte) 0)));
 		}
 		return tglbtnPwm;
 	}
@@ -996,43 +1018,39 @@ public class Cockpit extends JFrame {
 	private JToggleButton getTglbtnServo() {
 		if (tglbtnServo == null) {
 			tglbtnServo = new JToggleButton("Servo");
-			tglbtnServo.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					getRs485Line().getTfc()
-							.ServoOnOff(getTglbtnServo().getModel().isSelected() ? (byte) 1 : ((byte) 0));
-				}
-			});
+			tglbtnServo.addChangeListener(
+					e -> getTfc().ServoOnOff(getTglbtnServo().getModel().isSelected() ? (byte) 1 : ((byte) 0)));
 		}
 		return tglbtnServo;
 	}
 
-	private JPanel getPanel_1_3() {
+	private JPanel getPanelStearingTitle() {
 		if (panelStearingTitle == null) {
 			panelStearingTitle = new JPanel();
 			panelStearingTitle.setPreferredSize(new Dimension(300, 300));
 			panelStearingTitle.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null),
 					"Stearing", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			panelStearingTitle.setLayout(new BorderLayout(0, 0));
-			panelStearingTitle.add(getPanel_1_4());
+			panelStearingTitle.add(getPanelStearing());
 		}
 		return panelStearingTitle;
 	}
 
-	private JPanel getPanel_1_4() {
+	private JPanel getPanelStearing() {
 		if (panelStearing == null) {
 			panelStearing = new JPanel();
 			panelStearing.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseReleased(MouseEvent e) {
-					getRs485Line().getTfc().setServo_i(0, (short) 0);
-					getRs485Line().getTfc().setMotorPWM_i((short) 0, (short) 0);
+					getTfc().setServo_i(0, (short) 0);
+					getTfc().setMotorPWM_i((short) 0, (short) 0);
 				}
 			});
 			panelStearing.addMouseMotionListener(new MouseMotionAdapter() {
 				@Override
 				public void mouseDragged(MouseEvent e) {
-					double width = getPanel_1_4().getWidth();
-					double height = getPanel_1_4().getHeight();
+					double width = getPanelStearing().getWidth();
+					double height = getPanelStearing().getHeight();
 					double stearing = (e.getX() - width / 2) / (width / 2);
 					double speed = (height / 2 - e.getY()) / (height / 2);
 					speed = Math.min(speed, 1);
@@ -1041,8 +1059,8 @@ public class Cockpit extends JFrame {
 					stearing = Math.max(stearing, -1);
 					int servoPos = (int) (stearing * Tfc.SERVO_MINMAX);
 					int pwm = (int) (speed * Tfc.PWM_MINMAX);
-					getRs485Line().getTfc().setServo_i(0, (short) servoPos);
-					getRs485Line().getTfc().setMotorPWM_i((short) pwm, (short) pwm);
+					getTfc().setServo_i(0, (short) servoPos);
+					getTfc().setMotorPWM_i((short) pwm, (short) pwm);
 				}
 			});
 			panelStearing.setPreferredSize(new Dimension(300, 300));
@@ -1052,22 +1070,20 @@ public class Cockpit extends JFrame {
 		return panelStearing;
 	}
 
-	private JPanel getPanel_1_5() {
-		if (panel_1 == null) {
-			panel_1 = new JPanel();
-			panel_1.add(getPanel());
-			panel_1.add(getPanel_1_2());
+	private JPanel getPanel1_5() {
+		if (panel1 == null) {
+			panel1 = new JPanel();
+			panel1.add(getPanel());
+			panel1.add(getPanel1_2());
 		}
-		return panel_1;
+		return panel1;
 	}
 
 	private JButton getBtnSetting() {
 		if (btnSetting == null) {
 			btnSetting = new JButton("Send Setting");
-			btnSetting.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getRs485Line().getTfc().sendSetting();
-				}
+			btnSetting.addActionListener(e -> {
+				getTfc().sendSetting();
 			});
 		}
 		return btnSetting;
@@ -1080,32 +1096,52 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			GridBagLayout gblPanelConnect = new GridBagLayout();
 			gblPanelConnect.columnWidths = new int[] { 0, 0, 0 };
-			gblPanelConnect.rowHeights = new int[] { 0, 0, 0 };
+			gblPanelConnect.rowHeights = new int[] { 0, 0, 0, 0, 0, 0 };
 			gblPanelConnect.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
-			gblPanelConnect.rowWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
+			gblPanelConnect.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
 			panelConnect.setLayout(gblPanelConnect);
+			GridBagConstraints gbcRdbtnUsbWindows = new GridBagConstraints();
+			gbcRdbtnUsbWindows.insets = new Insets(0, 0, 5, 5);
+			gbcRdbtnUsbWindows.gridx = 0;
+			gbcRdbtnUsbWindows.gridy = 0;
+			panelConnect.add(getRdbtnUsbWindows(), gbcRdbtnUsbWindows);
+			GridBagConstraints gbcRdbtnUsbLinux = new GridBagConstraints();
+			gbcRdbtnUsbLinux.insets = new Insets(0, 0, 5, 0);
+			gbcRdbtnUsbLinux.gridx = 1;
+			gbcRdbtnUsbLinux.gridy = 0;
+			panelConnect.add(getRdbtnUsbLinux(), gbcRdbtnUsbLinux);
+			GridBagConstraints gbcRdbtnTcp = new GridBagConstraints();
+			gbcRdbtnTcp.insets = new Insets(0, 0, 5, 5);
+			gbcRdbtnTcp.gridx = 0;
+			gbcRdbtnTcp.gridy = 1;
+			panelConnect.add(getRdbtnTcp(), gbcRdbtnTcp);
 			GridBagConstraints gbcLblComPort = new GridBagConstraints();
 			gbcLblComPort.insets = new Insets(0, 0, 5, 5);
 			gbcLblComPort.anchor = GridBagConstraints.EAST;
 			gbcLblComPort.gridx = 0;
-			gbcLblComPort.gridy = 0;
+			gbcLblComPort.gridy = 2;
 			panelConnect.add(getLblComPort(), gbcLblComPort);
 			GridBagConstraints gbcTxtComPort = new GridBagConstraints();
 			gbcTxtComPort.insets = new Insets(0, 0, 5, 0);
 			gbcTxtComPort.fill = GridBagConstraints.HORIZONTAL;
 			gbcTxtComPort.gridx = 1;
-			gbcTxtComPort.gridy = 0;
+			gbcTxtComPort.gridy = 2;
 			panelConnect.add(getTxtComPort(), gbcTxtComPort);
 			GridBagConstraints gbcBtnAutodetect = new GridBagConstraints();
-			gbcBtnAutodetect.insets = new Insets(0, 0, 0, 5);
+			gbcBtnAutodetect.insets = new Insets(0, 0, 5, 5);
 			gbcBtnAutodetect.gridx = 0;
-			gbcBtnAutodetect.gridy = 1;
+			gbcBtnAutodetect.gridy = 3;
 			panelConnect.add(getBtnAutodetect(), gbcBtnAutodetect);
 			GridBagConstraints gbcBtnConnect = new GridBagConstraints();
+			gbcBtnConnect.insets = new Insets(0, 0, 5, 0);
 			gbcBtnConnect.fill = GridBagConstraints.HORIZONTAL;
 			gbcBtnConnect.gridx = 1;
-			gbcBtnConnect.gridy = 1;
+			gbcBtnConnect.gridy = 3;
 			panelConnect.add(getBtnConnect(), gbcBtnConnect);
+			GridBagConstraints gbcBtnDisconnect = new GridBagConstraints();
+			gbcBtnDisconnect.gridx = 1;
+			gbcBtnDisconnect.gridy = 4;
+			panelConnect.add(getBtnDisconnect(), gbcBtnDisconnect);
 		}
 		return panelConnect;
 	}
@@ -1129,13 +1165,11 @@ public class Cockpit extends JFrame {
 	private JButton getBtnConnect() {
 		if (btnConnect == null) {
 			btnConnect = new JButton("Connect");
-			btnConnect.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getRs485Line().setComPort(getTxtComPort().getText());
-					getRs485Line().startRead();
-					getPanelCockpit().setBackground(getBackground());
-					getBtnConnect().setEnabled(false);
-				}
+			btnConnect.addActionListener(e -> {
+				getCommunicationWrapper().startRead();
+				getPanelCockpit().setBackground(getBackground());
+				getBtnConnect().setEnabled(false);
+				getBtnDisconnect().setEnabled(true);
 			});
 		}
 		return btnConnect;
@@ -1144,21 +1178,18 @@ public class Cockpit extends JFrame {
 	private JButton getBtnAutodetect() {
 		if (btnAutodetect == null) {
 			btnAutodetect = new JButton("Autodetect");
-			btnAutodetect.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					JOptionPane.showMessageDialog(getRootPane(), "Disconect car!");
-					List<String> oldNames = Arrays.asList(SerialPortList.getPortNames());
-					JOptionPane.showMessageDialog(getRootPane(), "Connect car again!");
-					List<String> newNames = Arrays.asList(SerialPortList.getPortNames());
-					String foundName = newNames.stream().filter(name -> !oldNames.contains(name)).findFirst()
-							.orElse(null);
-					if (foundName != null) {
-						getTxtComPort().setText(foundName);
-						JOptionPane.showMessageDialog(getRootPane(), "Port sucessfully detected!");
-					} else {
-						JOptionPane.showMessageDialog(getRootPane(), "Port detection failed!", "Error",
-								JOptionPane.ERROR_MESSAGE);
-					}
+			btnAutodetect.addActionListener(e -> {
+				JOptionPane.showMessageDialog(getRootPane(), "Disconect car!");
+				List<String> oldNames = Arrays.asList(SerialPortList.getPortNames());
+				JOptionPane.showMessageDialog(getRootPane(), "Connect car again!");
+				List<String> newNames = Arrays.asList(SerialPortList.getPortNames());
+				String foundName = newNames.stream().filter(name -> !oldNames.contains(name)).findFirst().orElse(null);
+				if (foundName != null) {
+					getTxtComPort().setText(foundName);
+					JOptionPane.showMessageDialog(getRootPane(), "Port sucessfully detected!");
+				} else {
+					JOptionPane.showMessageDialog(getRootPane(), "Port detection failed!", "Error",
+							JOptionPane.ERROR_MESSAGE);
 				}
 			});
 		}
@@ -1172,9 +1203,9 @@ public class Cockpit extends JFrame {
 					TitledBorder.LEADING, TitledBorder.TOP, null, null));
 			GridBagLayout gblPanelRecording = new GridBagLayout();
 			gblPanelRecording.columnWidths = new int[] { 0, 0, 0 };
-			gblPanelRecording.rowHeights = new int[] { 0, 0, 0 };
+			gblPanelRecording.rowHeights = new int[] { 0, 0, 0, 0 };
 			gblPanelRecording.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
-			gblPanelRecording.rowWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
+			gblPanelRecording.rowWeights = new double[] { 0.0, 0.0, 0.0, Double.MIN_VALUE };
 			panelRecording.setLayout(gblPanelRecording);
 			GridBagConstraints gbcLblRecordFile = new GridBagConstraints();
 			gbcLblRecordFile.insets = new Insets(0, 0, 5, 5);
@@ -1189,11 +1220,12 @@ public class Cockpit extends JFrame {
 			gbcTxtFile.gridy = 0;
 			panelRecording.add(getTxtFile(), gbcTxtFile);
 			GridBagConstraints gbcBtnSelectFile = new GridBagConstraints();
-			gbcBtnSelectFile.insets = new Insets(0, 0, 0, 5);
+			gbcBtnSelectFile.insets = new Insets(0, 0, 5, 5);
 			gbcBtnSelectFile.gridx = 0;
 			gbcBtnSelectFile.gridy = 1;
 			panelRecording.add(getBtnSelectFile(), gbcBtnSelectFile);
 			GridBagConstraints gbcTglbtnRecord = new GridBagConstraints();
+			gbcTglbtnRecord.insets = new Insets(0, 0, 5, 0);
 			gbcTglbtnRecord.gridx = 1;
 			gbcTglbtnRecord.gridy = 1;
 			panelRecording.add(getTglbtnRecord(), gbcTglbtnRecord);
@@ -1237,14 +1269,14 @@ public class Cockpit extends JFrame {
 			tglbtnRecord.addChangeListener(e -> {
 				if (getTglbtnRecord().getModel().isSelected()) {
 					try {
-						getRs485Line().startRecording(new FileOutputStream(getTxtFile().getText()));
+						getCommunicationWrapper().startRecording(new FileOutputStream(getTxtFile().getText()));
 					} catch (FileNotFoundException e1) {
 						logger.info("File open error", e1);
 						JOptionPane.showMessageDialog(getRootPane(), "File not found.", "Error",
 								JOptionPane.ERROR_MESSAGE);
 					}
 				} else {
-					getRs485Line().stopRecording();
+					getCommunicationWrapper().stopRecording();
 				}
 			});
 		}
@@ -1298,9 +1330,9 @@ public class Cockpit extends JFrame {
 			panelMonitor = new JPanel();
 			panelMonitor.setLayout(new BorderLayout(0, 0));
 			panelMonitor.add(getAnmImgMonitor(), BorderLayout.CENTER);
-			panelMonitor.add(getPanel_2(), BorderLayout.EAST);
+			panelMonitor.add(getPanel2(), BorderLayout.EAST);
 			panelMonitor.add(getScrollBar(), BorderLayout.WEST);
-			panelMonitor.add(getPanel_3(), BorderLayout.NORTH);
+			panelMonitor.add(getPanel3(), BorderLayout.NORTH);
 		}
 		return panelMonitor;
 	}
@@ -1308,26 +1340,39 @@ public class Cockpit extends JFrame {
 	private AnimImage getAnmImgMonitor() {
 		if (anmImgMonitor == null) {
 			anmImgMonitor = new AnimImage(getImageBuffer2());
+			anmImgMonitor.addMouseMotionListener(new MouseMotionAdapter() {
+				@Override
+				public void mouseDragged(MouseEvent e) {
+					getImageBuffer2().selectRow(e.getY());
+				}
+			});
+			anmImgMonitor.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					getImageBuffer2().selectRow(e.getY());
+				}
+			});
 		}
 		return anmImgMonitor;
 	}
 
 	private ImageBuffer2 getImageBuffer2() {
 		if (imageBuffer2 == null) {
-			imageBuffer2 = new ImageBuffer2((Integer)getSpinnerPictureHeight().getValue(), getDrivingRecord());
-			int columnCoun = (Integer)getSpinnerColumnCount().getValue();
+			imageBuffer2 = new ImageBuffer2((Integer) getSpinnerPictureHeight().getValue(), getDrivingRecord());
+			int columnCoun = (Integer) getSpinnerColumnCount().getValue();
 			int[] columnWidths = new int[columnCoun];
 			int[] columnZooms = new int[columnCoun];
-			for(int i=0; i<columnCoun;i++){
-				columnWidths[i] = (Integer)getSpinnerColumnWidth(i).getValue();
-				columnZooms[i] = (Integer)getSpinnerColumnZoom(i).getValue();
+			for (int i = 0; i < columnCoun; i++) {
+				columnWidths[i] = (Integer) getSpinnerColumnWidth(i).getValue();
+				columnZooms[i] = (Integer) getSpinnerColumnZoom(i).getValue();
 			}
 			int[] data2Column = new int[6];
-			for(int i=0; i<data2Column.length;i++){
-				data2Column[i] = (Integer)getSpinnerDataColumn(i).getValue();
+			for (int i = 0; i < data2Column.length; i++) {
+				data2Column[i] = (Integer) getSpinnerDataColumn(i).getValue();
 			}
 			imageBuffer2.setColumns(columnWidths, columnZooms);
 			imageBuffer2.setDrawToColumn(data2Column);
+			imageBuffer2.setHeightZoom((Integer) getSpnHeightZoom().getValue());
 		}
 		return imageBuffer2;
 	}
@@ -1343,70 +1388,81 @@ public class Cockpit extends JFrame {
 		return udpServer;
 	}
 
-	private JPanel getPanel_2() {
-		if (panel_2 == null) {
-			panel_2 = new JPanel();
-			GridBagLayout gblPanel_2 = new GridBagLayout();
-			gblPanel_2.columnWidths = new int[] { 117, 0 };
-			gblPanel_2.rowHeights = new int[] { 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-			gblPanel_2.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-			gblPanel_2.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-					Double.MIN_VALUE };
-			panel_2.setLayout(gblPanel_2);
+	private JPanel getPanel2() {
+		if (panel2 == null) {
+			panel2 = new JPanel();
+			GridBagLayout gblPanel2 = new GridBagLayout();
+			gblPanel2.columnWidths = new int[] { 117, 0 };
+			gblPanel2.rowHeights = new int[] { 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			gblPanel2.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+			gblPanel2.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+					0.0, 0.0, Double.MIN_VALUE };
+			panel2.setLayout(gblPanel2);
 			GridBagConstraints gbcTxtUdpPort = new GridBagConstraints();
 			gbcTxtUdpPort.insets = new Insets(0, 0, 5, 0);
 			gbcTxtUdpPort.fill = GridBagConstraints.HORIZONTAL;
 			gbcTxtUdpPort.gridx = 0;
 			gbcTxtUdpPort.gridy = 0;
-			panel_2.add(getTxtUdpPort(), gbcTxtUdpPort);
+			panel2.add(getTxtUdpPort(), gbcTxtUdpPort);
 			GridBagConstraints gbcBtnStart = new GridBagConstraints();
 			gbcBtnStart.insets = new Insets(0, 0, 5, 0);
 			gbcBtnStart.anchor = GridBagConstraints.NORTHWEST;
 			gbcBtnStart.gridx = 0;
 			gbcBtnStart.gridy = 1;
-			panel_2.add(getBtnStart(), gbcBtnStart);
+			panel2.add(getBtnStart(), gbcBtnStart);
 			GridBagConstraints gbcBtnStop = new GridBagConstraints();
 			gbcBtnStop.insets = new Insets(0, 0, 5, 0);
 			gbcBtnStop.anchor = GridBagConstraints.NORTHWEST;
 			gbcBtnStop.gridx = 0;
 			gbcBtnStop.gridy = 2;
-			panel_2.add(getBtnStop(), gbcBtnStop);
+			panel2.add(getBtnStop(), gbcBtnStop);
 			GridBagConstraints gbcChckbxUseFakeData = new GridBagConstraints();
 			gbcChckbxUseFakeData.insets = new Insets(0, 0, 5, 0);
 			gbcChckbxUseFakeData.gridx = 0;
 			gbcChckbxUseFakeData.gridy = 3;
-			panel_2.add(getChckbxUseFakeData(), gbcChckbxUseFakeData);
+			panel2.add(getChckbxUseFakeData(), gbcChckbxUseFakeData);
 			GridBagConstraints gbcBtnXmlExport = new GridBagConstraints();
 			gbcBtnXmlExport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnXmlExport.gridx = 0;
 			gbcBtnXmlExport.gridy = 5;
-			panel_2.add(getBtnXmlExport(), gbcBtnXmlExport);
+			panel2.add(getBtnXmlExport(), gbcBtnXmlExport);
 			GridBagConstraints gbcBtnXmlImport = new GridBagConstraints();
 			gbcBtnXmlImport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnXmlImport.gridx = 0;
 			gbcBtnXmlImport.gridy = 7;
-			panel_2.add(getBtnXmlImport(), gbcBtnXmlImport);
+			panel2.add(getBtnXmlImport(), gbcBtnXmlImport);
+			GridBagConstraints gbcBtnClear = new GridBagConstraints();
+			gbcBtnClear.insets = new Insets(0, 0, 5, 0);
+			gbcBtnClear.gridx = 0;
+			gbcBtnClear.gridy = 9;
+			panel2.add(getBtnClear(), gbcBtnClear);
 			GridBagConstraints gbcBtnBinExport = new GridBagConstraints();
 			gbcBtnBinExport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnBinExport.gridx = 0;
 			gbcBtnBinExport.gridy = 10;
-			panel_2.add(getBtnBinExport(), gbcBtnBinExport);
+			panel2.add(getBtnBinExport(), gbcBtnBinExport);
 			GridBagConstraints gbcBtnBinImport = new GridBagConstraints();
+			gbcBtnBinImport.insets = new Insets(0, 0, 5, 0);
 			gbcBtnBinImport.gridx = 0;
 			gbcBtnBinImport.gridy = 12;
-			panel_2.add(getBtnBinImport(), gbcBtnBinImport);
+			panel2.add(getBtnBinImport(), gbcBtnBinImport);
+			GridBagConstraints gbcBtnHistogram = new GridBagConstraints();
+			gbcBtnHistogram.insets = new Insets(0, 0, 5, 0);
+			gbcBtnHistogram.gridx = 0;
+			gbcBtnHistogram.gridy = 14;
+			panel2.add(getBtnHistogram(), gbcBtnHistogram);
+			GridBagConstraints gbcBtnGradient = new GridBagConstraints();
+			gbcBtnGradient.gridx = 0;
+			gbcBtnGradient.gridy = 15;
+			panel2.add(getBtnGradient(), gbcBtnGradient);
 		}
-		return panel_2;
+		return panel2;
 	}
 
 	private JButton getBtnStop() {
 		if (btnStop == null) {
 			btnStop = new JButton("Stop");
-			btnStop.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getUdpServer().stop();
-				}
-			});
+			btnStop.addActionListener(e -> getUdpServer().stop());
 		}
 		return btnStop;
 	}
@@ -1414,11 +1470,7 @@ public class Cockpit extends JFrame {
 	private JButton getBtnStart() {
 		if (btnStart == null) {
 			btnStart = new JButton("Start");
-			btnStart.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					getUdpServer().readData();
-				}
-			});
+			btnStart.addActionListener(e -> getUdpServer().readData());
 		}
 		return btnStart;
 	}
@@ -1426,11 +1478,9 @@ public class Cockpit extends JFrame {
 	private JScrollBar getScrollBar() {
 		if (scrollBar == null) {
 			scrollBar = new JScrollBar();
-			scrollBar.addAdjustmentListener(new AdjustmentListener() {
-				public void adjustmentValueChanged(AdjustmentEvent e) {
-					if (e.getValue() != 0) {
-						getImageBuffer2().setScrollPosition(getDrivingRecord().getData().size() - e.getValue());
-					}
+			scrollBar.addAdjustmentListener(e -> {
+				if (e.getValue() != 0) {
+					getImageBuffer2().setScrollPosition(getDrivingRecord().getData().size() - e.getValue());
 				}
 			});
 		}
@@ -1440,7 +1490,7 @@ public class Cockpit extends JFrame {
 	private JTextField getTxtUdpPort() {
 		if (txtUdpPort == null) {
 			txtUdpPort = new JTextField();
-			txtUdpPort.setText("5555");
+			txtUdpPort.setText("5556");
 			txtUdpPort.setColumns(10);
 		}
 		return txtUdpPort;
@@ -1454,14 +1504,18 @@ public class Cockpit extends JFrame {
 			drivingRecord = new DrivingRecord();
 			drivingRecord.addPropertyDataListener(evt -> {
 				SwingUtilities.invokeLater(() -> {
-					getScrollBar().getModel()
-							.setMaximum(Math.max(drivingRecord.getData().size(), getImageBuffer2().getHeight()));
-					getScrollBar().getModel().setMinimum(0);
-					getScrollBar().getModel().setExtent(getImageBuffer2().getHeight());
+					recalculateScrollbar();
 				});
 			});
 		}
 		return drivingRecord;
+	}
+
+	private void recalculateScrollbar() {
+		getScrollBar().getModel().setMaximum(drivingRecord.getData().size() + getImageBuffer2().getHeightZoom());
+		getScrollBar().getModel().setMinimum(0);
+		getScrollBar().getModel().setExtent(getImageBuffer2().getHeight() / getImageBuffer2().getHeightZoom());
+
 	}
 
 	private JButton getBtnXmlExport() {
@@ -1617,89 +1671,100 @@ public class Cockpit extends JFrame {
 		return btnBinImport;
 	}
 
-	private JPanel getPanel_3() {
-		if (panel_3 == null) {
-			panel_3 = new JPanel();
-			panel_3.setBorder(new TitledBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null),
+	private JPanel getPanel3() {
+		if (panel3 == null) {
+			panel3 = new JPanel();
+			panel3.setBorder(new TitledBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null),
 					"Image config", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-			GridBagLayout gblPanel_3 = new GridBagLayout();
-			gblPanel_3.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 };
-			gblPanel_3.rowHeights = new int[] { 0, 0, 0, 0, 0 };
-			panel_3.setLayout(gblPanel_3);
+			GridBagLayout gblPanel3 = new GridBagLayout();
+			gblPanel3.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 };
+			gblPanel3.rowHeights = new int[] { 0, 0, 0, 0, 0 };
+			panel3.setLayout(gblPanel3);
 			GridBagConstraints gbcLblColumnCount = new GridBagConstraints();
 			gbcLblColumnCount.insets = new Insets(0, 0, 5, 5);
-			gbcLblColumnCount.gridx = 1;
+			gbcLblColumnCount.gridx = 2;
 			gbcLblColumnCount.gridy = 0;
-			panel_3.add(getLblColumnCount(), gbcLblColumnCount);
+			panel3.add(getLblColumnCount(), gbcLblColumnCount);
 			GridBagConstraints gbcLblColumnIndex = new GridBagConstraints();
 			gbcLblColumnIndex.insets = new Insets(0, 0, 5, 5);
-			gbcLblColumnIndex.gridx = 2;
+			gbcLblColumnIndex.gridx = 3;
 			gbcLblColumnIndex.gridy = 0;
-			panel_3.add(getLblColumnIndex(), gbcLblColumnIndex);
+			panel3.add(getLblColumnIndex(), gbcLblColumnIndex);
 			for (int i = 0; i < 6; i++) {
-				GridBagConstraints gbcLabel_1 = new GridBagConstraints();
-				gbcLabel_1.insets = new Insets(0, 0, 5, 5);
-				gbcLabel_1.gridx = 3 + i;
-				gbcLabel_1.gridy = 0;
-				panel_3.add(getLabelIndex(i), gbcLabel_1);
+				GridBagConstraints gbcLabel1 = new GridBagConstraints();
+				gbcLabel1.insets = new Insets(0, 0, 5, 5);
+				gbcLabel1.gridx = 4 + i;
+				gbcLabel1.gridy = 0;
+				panel3.add(getLabelIndex(i), gbcLabel1);
 				GridBagConstraints gbcSpinnerColumnWidth = new GridBagConstraints();
 				gbcSpinnerColumnWidth.insets = new Insets(0, 0, 5, 5);
-				gbcSpinnerColumnWidth.gridx = 3 + i;
+				gbcSpinnerColumnWidth.gridx = 4 + i;
 				gbcSpinnerColumnWidth.gridy = 1;
-				panel_3.add(getSpinnerColumnWidth(i), gbcSpinnerColumnWidth);
+				panel3.add(getSpinnerColumnWidth(i), gbcSpinnerColumnWidth);
 				GridBagConstraints gbcSpinnerColumnZoom = new GridBagConstraints();
 				gbcSpinnerColumnZoom.insets = new Insets(0, 0, 5, 5);
-				gbcSpinnerColumnZoom.gridx = 3 + i;
+				gbcSpinnerColumnZoom.gridx = 4 + i;
 				gbcSpinnerColumnZoom.gridy = 2;
-				panel_3.add(getSpinnerColumnZoom(i), gbcSpinnerColumnZoom);
+				panel3.add(getSpinnerColumnZoom(i), gbcSpinnerColumnZoom);
 				GridBagConstraints gbcSpinnerDataColumn = new GridBagConstraints();
 				gbcSpinnerDataColumn.insets = new Insets(0, 0, 5, 5);
-				gbcSpinnerDataColumn.gridx = 3+i;
+				gbcSpinnerDataColumn.gridx = 4 + i;
 				gbcSpinnerDataColumn.gridy = 3;
-				panel_3.add(getSpinnerDataColumn(i), gbcSpinnerDataColumn);
+				panel3.add(getSpinnerDataColumn(i), gbcSpinnerDataColumn);
 			}
 			GridBagConstraints gbcSlider_1 = new GridBagConstraints();
 			gbcSlider_1.gridheight = 2;
 			gbcSlider_1.insets = new Insets(0, 0, 5, 5);
 			gbcSlider_1.gridx = 0;
 			gbcSlider_1.gridy = 1;
-			panel_3.add(getSliderBrightness2(), gbcSlider_1);
+			gbcSlider_1.gridwidth = 2;
+			panel3.add(getSliderBrightness2(), gbcSlider_1);
 			GridBagConstraints gbcSpinnerColumnCount = new GridBagConstraints();
 			gbcSpinnerColumnCount.insets = new Insets(0, 0, 5, 5);
-			gbcSpinnerColumnCount.gridx = 1;
+			gbcSpinnerColumnCount.gridx = 2;
 			gbcSpinnerColumnCount.gridy = 1;
-			panel_3.add(getSpinnerColumnCount(), gbcSpinnerColumnCount);
+			panel3.add(getSpinnerColumnCount(), gbcSpinnerColumnCount);
 			GridBagConstraints gbcLblColumnWidth = new GridBagConstraints();
 			gbcLblColumnWidth.insets = new Insets(0, 0, 5, 5);
-			gbcLblColumnWidth.gridx = 2;
+			gbcLblColumnWidth.gridx = 3;
 			gbcLblColumnWidth.gridy = 1;
-			panel_3.add(getLblColumnWidth(), gbcLblColumnWidth);
+			panel3.add(getLblColumnWidth(), gbcLblColumnWidth);
 			GridBagConstraints gbcLblPictureHeight = new GridBagConstraints();
 			gbcLblPictureHeight.insets = new Insets(0, 0, 5, 5);
-			gbcLblPictureHeight.gridx = 1;
+			gbcLblPictureHeight.gridx = 2;
 			gbcLblPictureHeight.gridy = 2;
-			panel_3.add(getLblPictureHeight(), gbcLblPictureHeight);
+			panel3.add(getLblPictureHeight(), gbcLblPictureHeight);
 			GridBagConstraints gbcLblColumnZoom = new GridBagConstraints();
 			gbcLblColumnZoom.insets = new Insets(0, 0, 5, 5);
-			gbcLblColumnZoom.gridx = 2;
+			gbcLblColumnZoom.gridx = 3;
 			gbcLblColumnZoom.gridy = 2;
-			panel_3.add(getLblColumnZoom(), gbcLblColumnZoom);
+			panel3.add(getLblColumnZoom(), gbcLblColumnZoom);
+			GridBagConstraints gbcLblHeightZoom = new GridBagConstraints();
+			gbcLblHeightZoom.insets = new Insets(0, 0, 5, 5);
+			gbcLblHeightZoom.gridx = 0;
+			gbcLblHeightZoom.gridy = 3;
+			panel3.add(getLblHeightZoom(), gbcLblHeightZoom);
+			GridBagConstraints gbcSpnHeightZoom = new GridBagConstraints();
+			gbcSpnHeightZoom.insets = new Insets(0, 0, 5, 5);
+			gbcSpnHeightZoom.gridx = 1;
+			gbcSpnHeightZoom.gridy = 3;
+			panel3.add(getSpnHeightZoom(), gbcSpnHeightZoom);
 			GridBagConstraints gbcSpinnerPictureHeight = new GridBagConstraints();
 			gbcSpinnerPictureHeight.insets = new Insets(0, 0, 5, 5);
-			gbcSpinnerPictureHeight.gridx = 1;
+			gbcSpinnerPictureHeight.gridx = 2;
 			gbcSpinnerPictureHeight.gridy = 3;
-			panel_3.add(getSpinnerPictureHeight(), gbcSpinnerPictureHeight);
+			panel3.add(getSpinnerPictureHeight(), gbcSpinnerPictureHeight);
 			GridBagConstraints gbcLblDataToColumn = new GridBagConstraints();
 			gbcLblDataToColumn.insets = new Insets(0, 0, 5, 5);
-			gbcLblDataToColumn.gridx = 2;
+			gbcLblDataToColumn.gridx = 3;
 			gbcLblDataToColumn.gridy = 3;
-			panel_3.add(getLblDataToColumn(), gbcLblDataToColumn);
+			panel3.add(getLblDataToColumn(), gbcLblDataToColumn);
 			GridBagConstraints gbcBtnRecreateImage = new GridBagConstraints();
-			gbcBtnRecreateImage.gridx = 10;
+			gbcBtnRecreateImage.gridx = 11;
 			gbcBtnRecreateImage.gridy = 4;
-			panel_3.add(getBtnRecreateImage(), gbcBtnRecreateImage);
+			panel3.add(getBtnRecreateImage(), gbcBtnRecreateImage);
 		}
-		return panel_3;
+		return panel3;
 	}
 
 	private JSlider getSliderBrightness2() {
@@ -1822,11 +1887,12 @@ public class Cockpit extends JFrame {
 		}
 		return chckbxUseFakeData;
 	}
+
 	private JButton getBtnRecreateImage() {
 		if (btnRecreateImage == null) {
 			btnRecreateImage = new JButton("Recreate Image");
 			btnRecreateImage.addActionListener(evt -> {
-				AnimImage animImage =  getAnmImgMonitor();
+				AnimImage animImage = getAnmImgMonitor();
 				getPanelMonitor().remove(animImage);
 				animImage.stopAnim();
 				getImageBuffer2().unregisterUpdater();
@@ -1838,21 +1904,158 @@ public class Cockpit extends JFrame {
 				getAnmImgMonitor().setVisible(true);
 				getAnmImgMonitor().startAnim();
 				getImageBuffer2().setChanged();
+				recalculateScrollbar();
 			});
 		}
 		return btnRecreateImage;
 	}
+
 	private JLabel getLblDataToColumn() {
 		if (lblDataToColumn == null) {
 			lblDataToColumn = new JLabel("Data to column");
 		}
 		return lblDataToColumn;
 	}
+
 	private JSpinner getSpinnerDataColumn(int index) {
 		if (spinnerDataColumn[index] == null) {
 			spinnerDataColumn[index] = new JSpinner();
 			spinnerDataColumn[index].setModel(new SpinnerNumberModel(index, 0, 5, 1));
 		}
 		return spinnerDataColumn[index];
+	}
+
+	private JButton getBtnClear() {
+		if (btnClear == null) {
+			btnClear = new JButton("Clear");
+			btnClear.addActionListener(evt -> getDrivingRecord().clearData());
+		}
+		return btnClear;
+	}
+
+	private JButton getBtnHistogram() {
+		if (btnHistogram == null) {
+			btnHistogram = new JButton("Histogram");
+			btnHistogram.addActionListener(e -> {
+				Integer[] histogram = new Integer[11];
+				for (int i = 0; i < histogram.length; i++) {
+					histogram[i] = 0;
+				}
+				for (WifiMonitorData data : getDrivingRecord().getData()) {
+					for (int color : data.getImage()) {
+						histogram[color / (255 / (histogram.length - 1))]++;
+					}
+				}
+				JOptionPane.showMessageDialog(Cockpit.this, Arrays.asList(histogram).stream()
+						.map(v -> String.format("%3d", v)).collect(Collectors.joining(", ")));
+			});
+		}
+		return btnHistogram;
+	}
+
+	private JButton getBtnGradient() {
+		if (btnGradient == null) {
+			btnGradient = new JButton("Gradient");
+			btnGradient.addActionListener(e -> {
+				for (WifiMonitorData data : getDrivingRecord().getData()) {
+					int[] rGradient = new int[data.getImage().length];
+					int[] lGradient = new int[data.getImage().length];
+					for (int i = 0; i < data.getImage().length - 1; i++) {
+						rGradient[i] = data.getImage()[i] - data.getImage()[i + 1];
+						lGradient[i + 1] = data.getImage()[i + 1] - data.getImage()[i];
+					}
+					System.out.println("  " + Arrays.stream(rGradient).mapToObj(v -> String.format("%4d", v))
+							.collect(Collectors.joining(",")));
+					System.out.println(Arrays.stream(lGradient).mapToObj(v -> String.format("%4d", v))
+							.collect(Collectors.joining(",")));
+					System.out.println("---------------------------");
+				}
+			});
+		}
+		return btnGradient;
+	}
+
+	private JRadioButton getRdbtnUsbWindows() {
+		if (rdbtnUsbWindows == null) {
+			rdbtnUsbWindows = new JRadioButton("USB windows");
+			rdbtnUsbWindows.addItemListener(e -> changeConectionVew());
+		}
+		return rdbtnUsbWindows;
+	}
+
+	private JRadioButton getRdbtnUsbLinux() {
+		if (rdbtnUsbLinux == null) {
+			rdbtnUsbLinux = new JRadioButton("USB linux");
+			rdbtnUsbLinux.addItemListener(e -> changeConectionVew());
+		}
+		return rdbtnUsbLinux;
+	}
+
+	private JRadioButton getRdbtnTcp() {
+		if (rdbtnTcp == null) {
+			rdbtnTcp = new JRadioButton("TCP");
+			rdbtnTcp.addItemListener(e -> changeConectionVew());
+		}
+		return rdbtnTcp;
+	}
+
+	/**
+	 * @wbp.nonvisual location=427,707
+	 */
+	private ButtonGroup getButtonGroup() {
+		if (buttonGroup == null) {
+			buttonGroup = new ButtonGroup();
+			buttonGroup.add(getRdbtnUsbWindows());
+			buttonGroup.add(getRdbtnUsbLinux());
+			buttonGroup.add(getRdbtnTcp());
+		}
+		return buttonGroup;
+	}
+
+	private void changeConectionVew() {
+		getBtnAutodetect().setEnabled(getRdbtnUsbWindows().getModel().isSelected());
+		if (getRdbtnUsbWindows().getModel().isSelected()) {
+			getLblComPort().setText("Comm port (comm29)");
+			getTxtComPort().setText("com29");
+		} else if (getRdbtnUsbLinux().getModel().isSelected()) {
+			getLblComPort().setText("Comm port /dev/tty");
+			getTxtComPort().setText("ACM0");
+		} else if (getRdbtnTcp().getModel().isSelected()) {
+			getLblComPort().setText("Address (host:port)");
+			getTxtComPort().setText("otfeia406a.vsb.cz:40460");
+		}
+	}
+
+	private JButton getBtnDisconnect() {
+		if (btnDisconnect == null) {
+			btnDisconnect = new JButton("Disconnect");
+			btnDisconnect.setEnabled(false);
+			btnDisconnect.addActionListener(e -> {
+				try {
+					getCommunicationWrapper().close();
+					communicationWrapper = null;
+					getBtnDisconnect().setEnabled(false);
+					getBtnConnect().setEnabled(true);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			});
+		}
+		return btnDisconnect;
+	}
+
+	private JSpinner getSpnHeightZoom() {
+		if (spnHeightZoom == null) {
+			spnHeightZoom = new JSpinner();
+			spnHeightZoom.setModel(new SpinnerNumberModel(1, 1, 20, 1));
+		}
+		return spnHeightZoom;
+	}
+
+	private JLabel getLblHeightZoom() {
+		if (lblHeightZoom == null) {
+			lblHeightZoom = new JLabel("Height zoom");
+		}
+		return lblHeightZoom;
 	}
 }

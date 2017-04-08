@@ -67,7 +67,7 @@ public class UDPServer {
 					while (!end) {
 						DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 						serverSocket.receive(receivePacket);
-						System.out.println("RECEIVED: " + receivePacket.getLength());
+//						System.out.println("RECEIVED: " + receivePacket.getLength());
 						int packetCount = receivePacket.getLength() / WifiMonitorData.STRUCT_LENGTH;
 						for (int i = 0; i < packetCount; i++) {
 							WifiMonitorData data = new WifiMonitorData(receivePacket.getData(),

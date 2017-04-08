@@ -1,14 +1,8 @@
 package jezek.nxp.car;
 
-import java.awt.image.ColorModel;
-import java.awt.image.ImageConsumer;
-import java.awt.image.ImageProducer;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-
 public class ImageBuffer extends  AbstractImageBuffer {
 
+	private int zoom;
 	private int width;
 	private int height;
 	private int[] data;
@@ -22,7 +16,8 @@ public class ImageBuffer extends  AbstractImageBuffer {
 		if (height < 1 || agregation < 1) {
 			throw new IllegalArgumentException("Wrong size or agregation.");
 		}
-		this.width = pixeCount*zoom;
+		this.zoom = zoom;
+		this.width = pixeCount;
 		this.height = height;
 		this.agregation = agregation;
 		data = new int[width * height];
@@ -113,7 +108,7 @@ public class ImageBuffer extends  AbstractImageBuffer {
 
 	@Override
 	public int getWidth() {
-		return width;
+		return width*zoom;
 	}
 
 	@Override

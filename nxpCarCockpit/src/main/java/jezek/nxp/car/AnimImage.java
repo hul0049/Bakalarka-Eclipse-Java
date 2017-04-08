@@ -96,7 +96,7 @@ public class AnimImage extends Canvas implements Runnable {
 		long time = System.nanoTime();
 //		int[] memBuf = new int[imageWidth + imageHeight];
 		do {
-			logger.debug("do anim image");
+//			logger.debug("do anim image");
 			Graphics2D g = (Graphics2D) bf.getDrawGraphics();
 //			for (int i = 0; i < memBuf.length; i++) {
 //				memBuf[i] = r.nextInt();
@@ -115,10 +115,10 @@ public class AnimImage extends Canvas implements Runnable {
 					break;
 				}
 			}
- 			logger.debug("image changed + " + ((ImageBuffer2)imageBuffer).getColumnZoom()[0]);
+// 			logger.debug("image changed + " + ((ImageBuffer2)imageBuffer).getColumnZoom()[0]);
 			if (System.nanoTime() - time > 2000000000l) {
 				fps = counter/2;
-				logger.debug("fps " + fps);
+//				logger.debug("fps " + fps);
 				time = System.nanoTime();
 				counter = 0;
 			}

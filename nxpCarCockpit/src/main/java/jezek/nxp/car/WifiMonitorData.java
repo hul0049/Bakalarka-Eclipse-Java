@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlTransient;
 
 import jezek.nxp.car.Tfc.andata_chnl_enum;
 
@@ -18,6 +19,8 @@ public class WifiMonitorData {
 	private int servo; // -1000/1000
 	private int[] pwm; // -1000/1000
 	private int[] fb; // 0-1000
+	private boolean selected;
+	private ResponseData responseData;
 
 	public WifiMonitorData() {
 		super();
@@ -157,6 +160,23 @@ public class WifiMonitorData {
 	public String toString() {
 		return "WifiMonitorData [missing=" + missing + ", timestamp=" + timestamp + ", image=" + Arrays.toString(image)
 				+ ", servo=" + servo + ", pwm=" + Arrays.toString(pwm) + ", fb=" + Arrays.toString(fb) + "]";
+	}
+
+	@XmlTransient
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+	}
+
+	public ResponseData getResponseData() {
+		return responseData;
+	}
+
+	public void setResponseData(ResponseData responseData) {
+		this.responseData = responseData;
 	}
 
 }
