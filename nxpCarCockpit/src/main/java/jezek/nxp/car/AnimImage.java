@@ -2,6 +2,7 @@ package jezek.nxp.car;
 
 import java.awt.Canvas;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.event.ComponentAdapter;
@@ -42,6 +43,7 @@ public class AnimImage extends Canvas implements Runnable {
 		this.imageWidth = 300;
 		this.imageHeight = 300;
 	}
+
 	/**
 	 * 
 	 * @param width
@@ -65,6 +67,28 @@ public class AnimImage extends Canvas implements Runnable {
 				} else {
 					stopAnim();
 				}
+				imageBuffer.setChanged();
+			}
+		});
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				imageBuffer.setChanged();
+			}
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+				imageBuffer.setChanged();
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent e) {
+				imageBuffer.setChanged();
+			}
+
+			@Override
+			public void componentShown(ComponentEvent e) {
+				imageBuffer.setChanged();
 			}
 		});
 	}
@@ -94,20 +118,20 @@ public class AnimImage extends Canvas implements Runnable {
 		Random r = new Random();
 		int counter = 0;
 		long time = System.nanoTime();
-//		int[] memBuf = new int[imageWidth + imageHeight];
+		// int[] memBuf = new int[imageWidth + imageHeight];
 		do {
-//			logger.debug("do anim image");
+			// logger.debug("do anim image");
 			Graphics2D g = (Graphics2D) bf.getDrawGraphics();
-//			for (int i = 0; i < memBuf.length; i++) {
-//				memBuf[i] = r.nextInt();
-//			}
+			// for (int i = 0; i < memBuf.length; i++) {
+			// memBuf[i] = r.nextInt();
+			// }
 			Image image = createImage(
 					new MemoryImageSource(imageWidth, imageHeight, imageBuffer.getImgData(imgData), 0, imageWidth));
 			g.drawImage(image, 0, 0, imageWidth, imageHeight, null);
 			g.dispose();
 			bf.show();
 			counter++;
- 			while (!imageBuffer.isChanged() && !stop) {
+			while (!imageBuffer.isChanged() && !stop) {
 				try {
 					Thread.sleep(1);
 				} catch (InterruptedException e) {
@@ -115,10 +139,11 @@ public class AnimImage extends Canvas implements Runnable {
 					break;
 				}
 			}
-// 			logger.debug("image changed + " + ((ImageBuffer2)imageBuffer).getColumnZoom()[0]);
+			// logger.debug("image changed + " +
+			// ((ImageBuffer2)imageBuffer).getColumnZoom()[0]);
 			if (System.nanoTime() - time > 2000000000l) {
-				fps = counter/2;
-//				logger.debug("fps " + fps);
+				fps = counter / 2;
+				// logger.debug("fps " + fps);
 				time = System.nanoTime();
 				counter = 0;
 			}
@@ -129,4 +154,11 @@ public class AnimImage extends Canvas implements Runnable {
 		return fps;
 	}
 
+	@Override
+	public void paint(Graphics g) {
+		if(imageBuffer != null){
+			imageBuffer.setChanged();
+		}
+		super.paint(g);
+	}
 }

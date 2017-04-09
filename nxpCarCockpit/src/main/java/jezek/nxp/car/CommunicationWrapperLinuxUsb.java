@@ -58,7 +58,7 @@ public class CommunicationWrapperLinuxUsb extends CommunicationWrapper {
 	 * 
 	 * @param comPort
 	 */
-	public CommunicationWrapperLinuxUsb(Tfc tfc, String comPort) {
+	public CommunicationWrapperLinuxUsb(DataTransformer tfc, String comPort) {
 		super(tfc);
 		this.comPort = comPort;
 	}
@@ -107,12 +107,12 @@ public class CommunicationWrapperLinuxUsb extends CommunicationWrapper {
 	 * @throws SerialPortTimeoutException
 	 */
 	@Override
-	public int read(byte[] buffer, int offset, int size, int timeout) throws IOException {
+	protected int read(byte[] buffer, int offset, int size, int timeout) throws IOException {
 		return socketInput.read(buffer, offset, size);
 	}
 
 	@Override
-	public byte readByte(int timeout) throws IOException {
+	protected byte readByte(int timeout) throws IOException {
 		if(socketInput.read(oneByteBuffer, 0, 1) == 1 ){
 			return oneByteBuffer[0];
 		}
@@ -126,7 +126,7 @@ public class CommunicationWrapperLinuxUsb extends CommunicationWrapper {
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte[] data) throws IOException {
+	protected void sendData(byte[] data) throws IOException {
 		socketOutput.write(data);
 	}
 	/**
@@ -135,7 +135,7 @@ public class CommunicationWrapperLinuxUsb extends CommunicationWrapper {
 	 * @throws SerialPortException
 	 */
 	@Override
-	public int availableBytes() throws IOException {
+	protected int availableBytes() throws IOException {
 		return socketInput.available();
 	}
 
@@ -146,7 +146,7 @@ public class CommunicationWrapperLinuxUsb extends CommunicationWrapper {
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte data) throws IOException {
+	protected void sendData(byte data) throws IOException {
 		socketOutput.write(data);
 	}
 

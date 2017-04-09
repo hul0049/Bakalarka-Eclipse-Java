@@ -52,17 +52,16 @@ public abstract class CommunicationWrapper implements Runnable{
 	public static final int DEFAULT_TIMEOUT = 3000;
 	public static final int FREE_LINE_TIMEOUT = 10;
 
-	public static final byte[] DATA_HEADER = new byte[] { (byte) 0x02, (byte) 0x19, (byte) 0x01, (byte) 0x01 };
 
 	private boolean end = false;
 	private Thread readingThread;
-	private Tfc tfc;
-	private boolean record = false;
-	private OutputStream recordStream;
+	protected DataTransformer dataTransformer;
+	protected boolean record = false;
+	protected OutputStream recordStream;
 
-	public CommunicationWrapper(Tfc tfc) {
+	public CommunicationWrapper(DataTransformer dataTransformer) {
 		super();
-		this.tfc = tfc;
+		this.dataTransformer = dataTransformer;
 	}
 
 	public abstract void connect() throws IOException;
@@ -79,9 +78,9 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws SerialPortTimeoutException
 	 */
 
-	public abstract int read(byte[] buffer , int offset, int size, int timeout) throws IOException;
+	protected abstract int read(byte[] buffer , int offset, int size, int timeout) throws IOException;
 
-	public byte[] read(int size) throws IOException {
+	protected byte[] read(int size) throws IOException {
 		byte[] data = new byte[size];
 		int totalReaded = 0;
 		while(totalReaded < size){
@@ -105,7 +104,7 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws SerialPortException
 	 * @throws SerialPortTimeoutException
 	 */
-	public byte[] read(int size, int timeout) throws IOException {
+	protected byte[] read(int size, int timeout) throws IOException {
 		byte[] data = new byte[size];
 		int readed = read(data, 0, size, timeout);
 		if(readed >= 0 && readed != size){
@@ -114,7 +113,7 @@ public abstract class CommunicationWrapper implements Runnable{
 		return data;
 	}
 
-	public abstract byte readByte(int timeout) throws IOException;
+	protected abstract byte readByte(int timeout) throws IOException;
 
 	/**
 	 * 
@@ -122,7 +121,7 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws SerialPortException
 	 * @throws SerialPortTimeoutException
 	 */
-	public byte[] read() throws IOException {
+	protected byte[] read() throws IOException {
 		int size = availableBytes();
 		byte[] data = new byte[size];
 		int readed = read(data, 0, size, DEFAULT_TIMEOUT);
@@ -138,14 +137,14 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws LineIsBusyException
 	 * @throws SerialPortException
 	 */
-	public abstract void sendData(byte[] data) throws IOException;
+	protected abstract void sendData(byte[] data) throws IOException;
 
 	/**
 	 * 
 	 * @return
 	 * @throws SerialPortException
 	 */
-	public abstract int availableBytes() throws IOException;
+	protected abstract int availableBytes() throws IOException;
 
 	/**
 	 * 
@@ -153,7 +152,7 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws LineIsBusyException
 	 * @throws SerialPortException
 	 */
-	public abstract void sendData(byte data) throws IOException;
+	protected abstract void sendData(byte data) throws IOException;
 	
 	/**
 	 * 
@@ -163,7 +162,7 @@ public abstract class CommunicationWrapper implements Runnable{
 	 * @throws IOException
 	 * @throws LineIsBusyException
 	 */
-	public boolean waitForTemplate(byte[] template, int timeout) throws IOException {
+	protected boolean waitForTemplate(byte[] template, int timeout) throws IOException {
 		try {
 			int index = 0;
 			long startTime = System.currentTimeMillis();
@@ -217,25 +216,29 @@ public abstract class CommunicationWrapper implements Runnable{
 		try {
 			connect();
 			while (!end && !Thread.currentThread().isInterrupted()) {
-				byte[] control = tfc.getControl();
-				sendData(control);
-				if(tfc.isSendSetting()){
-					byte[] setting= tfc.getSetting();
+				if(dataTransformer.isControlToSend()){
+					byte[] control = dataTransformer.getControlToSend();
+					sendData(control);
+				}
+				if(dataTransformer.isSettingToSend()){
+					byte[] setting= dataTransformer.getSettingToSend();
 					for (int i = 0; i < setting.length; i++) {
 						System.out.print(String.format("%x ", setting[i]));
 					}
 					System.out.println();
 					sendData(setting);
 				}
-				waitForTemplate(DATA_HEADER, 200);
-				byte[] data = read(277);
-				if(data[276] != Tfc.ETX){
+				if(dataTransformer.waitForTamplate()){
+					waitForTemplate(dataTransformer.getTempalte(), 200);
+				}
+				byte[] data = read(dataTransformer.dataCount()); 
+				if(dataTransformer.checkTail(data)){
 					logger.warn("No ETX on end of packet.");
 					continue;
 				}
-				tfc.setData(data);
+				dataTransformer.processData(data);
 				if(record){
-					recordStream.write(Tfc.DATA_HEADER);
+					recordStream.write(dataTransformer.getTempalte());
 					recordStream.write(data);
 				}
 			}

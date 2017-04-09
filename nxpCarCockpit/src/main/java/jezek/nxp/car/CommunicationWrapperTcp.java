@@ -48,7 +48,7 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 	 * 
 	 * @param comPort
 	 */
-	public CommunicationWrapperTcp(Tfc tfc, String address) {
+	public CommunicationWrapperTcp(DataTransformer tfc, String address) {
 		super(tfc);
 		String[] parts = address.split(":");
 		int port = 40460;
@@ -72,6 +72,7 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 		this.port = port;
 	}
 	
+	@Override
 	public void connect() throws IOException {
 		 socket = new Socket(InetAddress.getByName(address), port);
 		 socketInput  = socket.getInputStream();
@@ -91,13 +92,13 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 	}
 
 	@Override
-	public int read(byte[] buffer, int offset, int size, int timeout) throws IOException{
+	protected int read(byte[] buffer, int offset, int size, int timeout) throws IOException{
 		socket.setSoTimeout(timeout);
 		return socketInput.read(buffer, offset, size);
 	}
 	
 	@Override
-	public byte readByte(int timeout) throws IOException {
+	protected byte readByte(int timeout) throws IOException {
 		socket.setSoTimeout(timeout);
 		return (byte)socketInput.read();
 	}
@@ -109,7 +110,7 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte[] data) throws IOException {
+	protected void sendData(byte[] data) throws IOException {
 		socketOutput.write(data);
 	}
 
@@ -119,7 +120,7 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public int availableBytes() throws IOException {
+	protected int availableBytes() throws IOException {
 		return socketInput.available();
 	}
 
@@ -130,7 +131,7 @@ public class CommunicationWrapperTcp extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte data) throws IOException {
+	protected void sendData(byte data) throws IOException {
 		socketOutput.write(data);
 	}
 

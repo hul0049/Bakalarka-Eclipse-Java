@@ -43,7 +43,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * 
 	 * @param comPort
 	 */
-	public CommunicationWrapperWinUsb(Tfc tfc, String comPort) {
+	public CommunicationWrapperWinUsb(DataTransformer tfc, String comPort) {
 		super(tfc);
 		this.comPort = comPort;
 	}
@@ -93,7 +93,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	}
 
 	@Override
-	public int read(byte[] buffer, int offset, int size, int timeout) throws IOException{
+	protected int read(byte[] buffer, int offset, int size, int timeout) throws IOException{
 		try {
 			byte[] data = comm.readBytes(size, timeout);
 			BinaryUtils.copyInto(data, buffer, offset);
@@ -113,7 +113,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * @throws SerialPortTimeoutException
 	 */
 	@Override
-	public byte[] read(int size, int timeout) throws IOException {
+	protected byte[] read(int size, int timeout) throws IOException {
 		try {
 			return comm.readBytes(size, timeout);
 		} catch (SerialPortException e) {
@@ -124,7 +124,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	}
 
 	@Override
-	public byte readByte(int timeout) throws IOException {
+	protected byte readByte(int timeout) throws IOException {
 		try {
 			byte[] data = comm.readBytes(1, timeout);
 			return data[0];
@@ -142,7 +142,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * @throws SerialPortTimeoutException
 	 */
 	@Override
-	public byte[] read() throws IOException {
+	protected byte[] read() throws IOException {
 		try {
 			comm.openPort();
 			return comm.readBytes();
@@ -158,7 +158,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte[] data) throws IOException {
+	protected void sendData(byte[] data) throws IOException {
 		try {
 			comm.writeBytes(data);
 		} catch (SerialPortException e) {
@@ -172,7 +172,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public int availableBytes() throws IOException {
+	protected int availableBytes() throws IOException {
 		try {
 			return comm.getInputBufferBytesCount();
 		} catch (SerialPortException e) {
@@ -187,7 +187,7 @@ public class CommunicationWrapperWinUsb extends CommunicationWrapper{
 	 * @throws SerialPortException
 	 */
 	@Override
-	public void sendData(byte data) throws IOException {
+	protected void sendData(byte data) throws IOException {
 		try {
 			comm.writeByte(data);
 		} catch (SerialPortException e) {
