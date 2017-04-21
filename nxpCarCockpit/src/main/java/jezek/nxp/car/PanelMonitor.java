@@ -83,8 +83,6 @@ public class PanelMonitor extends JPanel {
 	private JButton btnDeleteUnselectedsAnd;
 	private JToggleButton btnInsertResponse;
 
-
-	
 	public PanelMonitor() {
 		super();
 		initialize();
@@ -105,27 +103,37 @@ public class PanelMonitor extends JPanel {
 		return tfc;
 	}
 
-	
+	private boolean dragSelectValue = true;
 	private AnimImage getAnmImgMonitor() {
 		if (anmImgMonitor == null) {
 			anmImgMonitor = new AnimImage(getImageBuffer2());
-			anmImgMonitor.addMouseWheelListener(e -> getScrollBar().getModel().setValue(getScrollBar().getModel().getValue()+e.getScrollAmount()));
+			anmImgMonitor.addMouseWheelListener(e -> getScrollBar().getModel()
+					.setValue((int)(getScrollBar().getModel().getValue() + e.getPreciseWheelRotation())));
 			anmImgMonitor.addMouseMotionListener(new MouseMotionAdapter() {
 				@Override
 				public void mouseDragged(MouseEvent e) {
-					if(!getBtnInsertResponse().getModel().isSelected()){
-						getImageBuffer2().selectRow(e.getY());
+					if (!getBtnInsertResponse().getModel().isSelected()) {
+						getImageBuffer2().selectRow(e.getY(), dragSelectValue);
 					}
 				}
 			});
 			anmImgMonitor.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					if(getBtnInsertResponse().getModel().isSelected()){
-						getImageBuffer2().insertResponse(e.getX(), e.getY());
+					if (getBtnInsertResponse().getModel().isSelected()) {
+						if (e.getButton() == MouseEvent.BUTTON3) {
+							getImageBuffer2().corectData(e.getX(), e.getY());
+						} else {
+							getImageBuffer2().insertResponse(e.getX(), e.getY());
+						}
 					} else {
 						getImageBuffer2().selectRow(e.getY());
 					}
+				}
+
+				@Override
+				public void mousePressed(MouseEvent e) {
+					dragSelectValue = !getDrivingRecord().getData().get(getImageBuffer2().getSelectRow(e.getY())).isSelected();
 				}
 			});
 		}
@@ -708,7 +716,6 @@ public class PanelMonitor extends JPanel {
 		return btnGradient;
 	}
 
-
 	private JSpinner getSpnHeightZoom() {
 		if (spnHeightZoom == null) {
 			spnHeightZoom = new JSpinner();
@@ -726,10 +733,12 @@ public class PanelMonitor extends JPanel {
 
 	private PanelConnector getPanelConnector() {
 		if (panelConnector == null) {
-			panelConnector = new PanelConnector(new WiFiDataTransformer(getDrivingRecord()), new OldFormatToMonitor(getDrivingRecord()));
+			panelConnector = new PanelConnector(new WiFiDataTransformer(getDrivingRecord()),
+					new OldFormatToMonitor(getDrivingRecord()));
 		}
 		return panelConnector;
 	}
+
 	private JButton getBtnClearSelection() {
 		if (btnClearSelection == null) {
 			btnClearSelection = new JButton("Clear Selection");
@@ -737,6 +746,7 @@ public class PanelMonitor extends JPanel {
 		}
 		return btnClearSelection;
 	}
+
 	private JButton getBtnInvertSelection() {
 		if (btnInvertSelection == null) {
 			btnInvertSelection = new JButton("Invert Selection");
@@ -744,6 +754,7 @@ public class PanelMonitor extends JPanel {
 		}
 		return btnInvertSelection;
 	}
+
 	private JButton getBtnDeleteUnselectedsAnd() {
 		if (btnDeleteUnselectedsAnd == null) {
 			btnDeleteUnselectedsAnd = new JButton("<html>Delete UnSelecteds<p> and Missing</html>");
@@ -751,6 +762,7 @@ public class PanelMonitor extends JPanel {
 		}
 		return btnDeleteUnselectedsAnd;
 	}
+
 	private JToggleButton getBtnInsertResponse() {
 		if (btnInsertResponse == null) {
 			btnInsertResponse = new JToggleButton("Insert Response");

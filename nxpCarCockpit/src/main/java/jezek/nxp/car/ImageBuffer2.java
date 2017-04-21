@@ -245,6 +245,24 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		setChanged();
 	}
 
+	public void selectRow(int imageRowIndex, boolean selected) {
+		int selectedDataIndex = rowPosition - ((imageRowIndex - 1) / heightZoom);
+		if (selectedDataIndex < 0 || selectedDataIndex > drivingRecord.getData().size()) {
+			return;
+		}
+		WifiMonitorData data = drivingRecord.getData().get(selectedDataIndex);
+		data.setSelected(selected);
+		setChanged();
+	}
+
+	public int getSelectRow(int imageRowIndex) {
+		int selectedDataIndex = rowPosition - ((imageRowIndex - 1) / heightZoom);
+		if (selectedDataIndex < 0 || selectedDataIndex > drivingRecord.getData().size()) {
+			return -1;
+		}
+		return selectedDataIndex;
+	}
+
 	public void insertResponse(int width, int height) {
 		int selectedDataIndex = rowPosition - ((height - 1) / heightZoom);
 		if (selectedDataIndex < 0 || selectedDataIndex > drivingRecord.getData().size()) {
@@ -274,10 +292,48 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		setChanged();
 	}
 
+
+	public void corectData(int width, int height) {
+		int selectedDataIndex = rowPosition - ((height - 1) / heightZoom);
+		if (selectedDataIndex < 0 || selectedDataIndex > drivingRecord.getData().size()) {
+			return;
+		}
+		int column = -1;
+		int min = -1;
+		int max = -1;
+		for (int i = 0; i < columnPositions.length; i++) {
+			if (width >= columnPositions[i] && width < columnPositions[i + 1] - 1) {
+				column = i;
+				min = columnPositions[i];
+				max = columnPositions[i + 1] - 1;
+				break;
+			}
+		}
+		if (column == -1) {
+			column = columnPositions.length - 1;
+			min = columnPositions[column];
+			max = height - 1;
+		}
+		int center = middleAxisPosition[column];
+		int value = 0;
+		double recalculatedX = (width - min)/(double)columnZoom[column];
+		value = (int) (1000 * (recalculatedX-center) / (double) (columnWidth[column]/2));
+		setDataValue(column, value, selectedDataIndex);
+		setChanged();
+	}
+
 	private void setResponseValue(int columnIndex, int value, int recordIndex) {
 		for (int i = 0; i < drawToColumn.length; i++) {
 			if (drawToColumn[i] == columnIndex) {
 				setResponseDataValue(i, value, recordIndex);
+			}
+		}
+	}
+
+	private void setDataValue(int columnIndex, int value, int recordIndex) {
+		for (int i = 0; i < drawToColumn.length; i++) {
+			if (drawToColumn[i] == columnIndex) {
+				setColumnDataValue(i, value, recordIndex);
 			}
 		}
 	}
@@ -295,6 +351,22 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 			break;
 		case 3:
 			drivingRecord.getData().get(recordIndex).getResponseData().getPwm()[1] = value;
+			break;
+		default:
+			break;
+		}
+	}
+
+	private void setColumnDataValue(int dataIndex, int value, int recordIndex) {
+		switch (dataIndex) {
+		case 1:
+			drivingRecord.getData().get(recordIndex).setServo(value);
+			break;
+		case 2:
+			drivingRecord.getData().get(recordIndex).getPwm()[0] = value;
+			break;
+		case 3:
+			drivingRecord.getData().get(recordIndex).getPwm()[1] = value;
 			break;
 		default:
 			break;

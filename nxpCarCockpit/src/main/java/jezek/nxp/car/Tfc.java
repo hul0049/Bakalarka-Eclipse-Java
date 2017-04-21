@@ -326,10 +326,24 @@ public class Tfc implements DataTransformer {
 
 	}
 
+
+	// set servo position in range <-SERVO_MINMAX, SERVO_MINMAX>
+	public float getServo_i(int channel) {
+		// ... m_control
+		return m_control.servo_pos[channel];
+
+	}
+
 	// set servo position in range <-1.0, 1.0>
 	public void setServo_f(int channel, float position) {
 		// ... TFC_Servo_i
 		setServo_i(channel, (short) (position * SERVO_MINMAX));
+	}
+
+	// set servo position in range <-1.0, 1.0>
+	public float getServo_f(int channel) {
+		// ... TFC_Servo_i
+		return getServo_i(channel)/(float)SERVO_MINMAX;
 	}
 
 	// enable/disable motors
@@ -344,6 +358,16 @@ public class Tfc implements DataTransformer {
 		m_control.pwm_a = pwm_a;
 		m_control.pwm_b = pwm_b;
 
+	}
+
+	// set PWM for both motors in range <-PWM_MINMAX, PWM_MINMAX>
+	public short getMotorPWM_ia() {
+		return m_control.pwm_a;
+	}
+
+	// set PWM for both motors in range <-PWM_MINMAX, PWM_MINMAX>
+	public short getMotorPWM_ib() {
+		return m_control.pwm_b;
 	}
 
 	// set PWM for both motors in range <-1.0, 1.0>
