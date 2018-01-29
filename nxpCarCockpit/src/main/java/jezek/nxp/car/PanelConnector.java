@@ -234,7 +234,7 @@ public class PanelConnector extends JPanel {
 			getTxtComPort().setText("ACM0");
 		} else if (getRdbtnTcp().getModel().isSelected()) {
 			getLblComPort().setText("Address (host:port)");
-			getTxtComPort().setText("otfeia406a.vsb.cz:40460");
+			getTxtComPort().setText("192.168.1.4:40460");
 		} else if (getRdbtnWifi().getModel().isSelected()) {
 			getLblComPort().setText("Port");
 			getTxtComPort().setText("5556");

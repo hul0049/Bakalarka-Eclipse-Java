@@ -352,6 +352,7 @@ public class Tfc implements DataTransformer {
 		m_control.pwm_onoff = onoff;
 	}
 
+	//a - right wheel, b - left wheel
 	// set PWM for both motors in range <-PWM_MINMAX, PWM_MINMAX>
 	public void setMotorPWM_i(short pwm_a, short pwm_b) {
 		// ... m_control
