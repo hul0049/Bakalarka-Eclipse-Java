@@ -51,6 +51,7 @@ public class PanelCockpit extends JPanel {
 
 	private AnimImage animImage;
 	private Tfc tfc;
+	private TfcNewFormat tfcNewFormat;
 	private ImageBuffer imageBuffer;
 	private JPanel panelCamerra;
 	private JPanel panelSetting;
@@ -142,6 +143,13 @@ public class PanelCockpit extends JPanel {
 			tfc = new Tfc();
 		}
 		return tfc;
+	}
+
+	private TfcNewFormat getTfcNewFormat() {
+		if (tfcNewFormat == null) {
+			tfcNewFormat = new TfcNewFormat();
+		}
+		return tfcNewFormat;
 	}
 
 	private AnimImage getAnimImage() {
@@ -992,7 +1000,7 @@ public class PanelCockpit extends JPanel {
 
 	private PanelConnector getPanelConnect() {
 		if (panelConnect == null) {
-			panelConnect = new PanelConnector(null, getTfc());
+			panelConnect = new PanelConnector(getTfcNewFormat(), getTfc());
 		}
 		return panelConnect;
 	}

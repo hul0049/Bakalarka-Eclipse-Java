@@ -7,12 +7,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jezek.nxp.car.RotateDataBufferInterface.RowDataInfo;
+
 public interface RotateDataBufferInterface {
 
 	public int[] getData();
 
 	public RowDataInfo[] getRowDataInfos();
 
+	public RowDataInfo getRowDataInfo(int relativeIndex);
+	
 	public int getLeftBorderCut();
 
 	public int getRightBorderCut();

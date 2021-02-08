@@ -85,12 +85,12 @@ public class RotateDataBuffer implements RotateDataBufferInterface {
 		}
 		List<Integer> lineCandidate = new ArrayList<Integer>();
 		for (int i = 0; i < diff.length - 1; i++) {
-			if (Math.abs(diff[i] + diff[i + 1]) > 1200) {
+			if (Math.abs(diff[i] + diff[i + 1]) > 1000) {
 				int move = 0;
 				if (diff[i] + diff[i + 1] > 0) {
 					move += 1;
 				}
-				if (diff[i + 1] > 1500) {
+				if (diff[i + 1] > 1200) {
 					move += 1;
 				}
 				lineCandidate.add(i + rightBorderCut + move);
@@ -198,6 +198,14 @@ public class RotateDataBuffer implements RotateDataBufferInterface {
 			}
 		}
 		return -1;
+	}
+
+	public RowDataInfo getRowDataInfo(int relativeIndex) {
+		int index = (rowPosition - 1 + relativeIndex) % height;
+		if (index < 0) {
+			index += height;
+		}
+		return rowDataInfos[index];
 	}
 
 	public int getAgregation() {

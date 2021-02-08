@@ -7,7 +7,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class UdpDataGenerator {
-	public static void main(String args[]) throws Exception {
+
+	public static void main(String[] args) throws Exception {
 		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 		DatagramSocket clientSocket = new DatagramSocket();
 		InetAddress IPAddress = InetAddress.getByName("localhost");
@@ -22,5 +23,8 @@ public class UdpDataGenerator {
 		String modifiedSentence = new String(receivePacket.getData());
 		System.out.println("FROM SERVER:" + modifiedSentence);
 		clientSocket.close();
+	}
+	public UdpDataGenerator() {
+		System.out.println("aa");
 	}
 }

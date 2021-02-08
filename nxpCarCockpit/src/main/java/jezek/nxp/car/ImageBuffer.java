@@ -182,4 +182,9 @@ public class ImageBuffer extends AbstractImageBuffer implements RotateDataBuffer
 		return dataBuffer.getLastLeft(rowIndex, limit);
 	}
 
+	@Override
+	public RowDataInfo getRowDataInfo(int relativeIndex) {
+		return dataBuffer.getRowDataInfo(relativeIndex);
+	}
+
 }
