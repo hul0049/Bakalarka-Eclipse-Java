@@ -5,6 +5,8 @@ import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.appender.db.ColumnMapping;
 
 public class ImageBuffer2 extends AbstractImageBuffer {
@@ -15,6 +17,8 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 	private double brightness = 1;
 	private int heightZoom = 1;
 
+
+	
 	int camImageWidth = 128;
 	int[] columnPositions;// = new int[] { 1, 130, 231, 332, 433, 535 };
 	int[] columnZoom = new int[] { 2, 2, 2, 2, 2, 2 };
@@ -141,7 +145,6 @@ public class ImageBuffer2 extends AbstractImageBuffer {
 		}
 		synchronized (drivingRecord.getData()) {
 			int currentRowPosition = rowPosition;
-
 			for (int imageRowIndex = 0; imageRowIndex < height; imageRowIndex++) {
 				int imgRowBegin = imageRowIndex * width;
 				if (currentRowPosition - imageRowIndex / heightZoom < 0 || drivingRecord.getData().isEmpty()

@@ -26,6 +26,8 @@ public class DrivingRecord {
 			}
 		}
 		data.add(value);
+		if(data.size()>2000000)
+			data.clear();
 		propertyChangeSupport.firePropertyChange("data", null, data);
 	}
 

@@ -67,7 +67,7 @@ public class UDPServer extends CommunicationWrapper implements Runnable {
 	@Override
 	public void run() {
 		if (fakeMode) {
-			byte[] buffer = new byte[142];
+			byte[] buffer = new byte[2048];
 			while (!end) {
 				WifiMonitorData data = fakeData();
 				data.writeToArray(buffer);
@@ -81,11 +81,14 @@ public class UDPServer extends CommunicationWrapper implements Runnable {
 		} else {
 			try {
 				connect();
-				byte[] receiveData = new byte[dataTransformer.dataCount()];
-				while (!end) {
+					
+				 	//byte[] receiveData = new byte[dataTransformer.dataCount()];
+					byte[] receiveData = new byte[2048];
+					while (!end) {
 					DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 					serverSocket.receive(receivePacket);
-					dataTransformer.processData(receiveData);
+					dataTransformer.processData(receiveData);  
+					
 					if(record){
 						recordStream.write(dataTransformer.getTempalte());
 						recordStream.write(receiveData);

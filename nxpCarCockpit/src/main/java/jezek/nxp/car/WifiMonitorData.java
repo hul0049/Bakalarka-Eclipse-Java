@@ -19,9 +19,11 @@ public class WifiMonitorData {
 	private int servo; // -1000/1000
 	private int[] pwm; // -1000/1000
 	private int[] fb; // 0-1000
+	private int[] dc; // distance 
+	private int speed; // speed of car
 	private boolean selected;
 	private ResponseData responseData;
-
+		
 	public WifiMonitorData() {
 		super();
 	}
@@ -39,18 +41,24 @@ public class WifiMonitorData {
 		image = new int[NUM_LINE_SCAN];
 		pwm = new int[2];
 		fb = new int[2];
+		dc = new int[2];
 		missing = false;
-		ByteBuffer dataBuffer = ByteBuffer.wrap(data, offset, STRUCT_LENGTH);
+		//ByteBuffer dataBuffer = ByteBuffer.wrap(data, offset, STRUCT_LENGTH);
+		ByteBuffer dataBuffer = ByteBuffer.wrap(data);
 		dataBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		timestamp = BinaryUtils.toUnsigned(dataBuffer.getInt());
 		for (int i = 0; i < image.length; i++) {
-			image[i] = BinaryUtils.byteToInt(dataBuffer.get());
+			this.image[i] = BinaryUtils.toUnsigned(dataBuffer.getShort())/16;
 		}
 		servo = dataBuffer.getShort();
 		pwm[0] = dataBuffer.getShort();
 		pwm[1] = dataBuffer.getShort();
 		fb[0] = dataBuffer.getShort();
 		fb[1] = dataBuffer.getShort();
+		this.dc[0] = dataBuffer.getShort();
+		this.dc[1] = dataBuffer.getShort();
+		this.speed = dataBuffer.getShort();
+
 	}
 
 	public byte[] writeToArray(byte[] buf) {
@@ -65,7 +73,14 @@ public class WifiMonitorData {
 		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(pwm[1]), 2));
 		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(fb[0]), 2));
 		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(fb[1]), 2));
-
+		if(dc == null)
+		{dc = new int[2];
+		}
+		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(dc[0]), 2));
+		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(dc[1]), 2));
+		settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(speed), 2));
+		//settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(leftIndex), 2));
+		//settingBuffer.putShort(BinaryUtils.toShort(BinaryUtils.toBytes(rightIndex), 2));
 		return buf;
 	}
 
@@ -118,7 +133,7 @@ public class WifiMonitorData {
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
 	}
-
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -151,6 +166,10 @@ public class WifiMonitorData {
 			return false;
 		if (servo != other.servo)
 			return false;
+		if (dc != other.dc)
+			return false;
+		if (speed != other.speed)
+			return false;
 		if (timestamp != other.timestamp)
 			return false;
 		return true;
@@ -159,7 +178,8 @@ public class WifiMonitorData {
 	@Override
 	public String toString() {
 		return "WifiMonitorData [missing=" + missing + ", timestamp=" + timestamp + ", image=" + Arrays.toString(image)
-				+ ", servo=" + servo + ", pwm=" + Arrays.toString(pwm) + ", fb=" + Arrays.toString(fb) + "]";
+				+ ", servo=" + servo + ", pwm=" + Arrays.toString(pwm) + ", fb=" + Arrays.toString(fb) +
+				"dc = " + Arrays.toString(dc) + "speed = " + speed;
 	}
 
 	@XmlTransient
